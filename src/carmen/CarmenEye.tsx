@@ -25,7 +25,7 @@ export function CarmenEye({ x, blinkRef, lookRef, speakRef, happyRef }: CarmenEy
 
   return (
     <mesh position={[x, 0, 0]} material={material}>
-      <planeGeometry args={[2.42, 3.03]} />
+      <planeGeometry args={[3.03, 3.03]} />
     </mesh>
   )
 }
