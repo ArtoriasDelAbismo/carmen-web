@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrthographicCamera } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { CarmenFace } from './CarmenFace'
-import { useRealtimeVoice, type VoiceExpression } from './useRealtimeVoice'
+import { useElevenLabsVoice, type VoiceExpression } from './useElevenLabsVoice'
 import { useResponsiveZoom } from './useResponsiveZoom'
 import './CarmenScene.css'
 
@@ -22,7 +22,7 @@ export function CarmenScene() {
     happyTargetRef.current = mood === 'happy' ? 1 : 0
   }, [])
 
-  const { status, error, connect, disconnect, speakRef } = useRealtimeVoice({
+  const { status, error, connect, disconnect, speakRef } = useElevenLabsVoice({
     onExpressionChange: handleExpressionChange,
   })
 
