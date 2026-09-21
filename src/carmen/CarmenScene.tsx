@@ -3,8 +3,10 @@ import { Canvas } from '@react-three/fiber'
 import { OrthographicCamera } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { CarmenFace } from './CarmenFace'
-import { useElevenLabsVoice, type VoiceExpression } from './useElevenLabsVoice'
+import { useElevenLabsVoice } from './useElevenLabsVoice'
+import { useRealtimeVoice, type VoiceExpression } from './useRealtimeVoice'
 import { useResponsiveZoom } from './useResponsiveZoom'
+import { VOICE_PROVIDER } from '../lib/config'
 import './CarmenScene.css'
 
 export function CarmenScene() {
@@ -12,8 +14,9 @@ export function CarmenScene() {
   const happyTimeoutRef = useRef<number | null>(null)
   const zoom = useResponsiveZoom()
 
-  // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice) — this
-  // is the real signal; it persists until she calls the tool again, no timeout.
+  // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice /
+  // useElevenLabsVoice) — this is the real signal; it persists until she calls
+  // the tool again, no timeout.
   const handleExpressionChange = useCallback((mood: VoiceExpression) => {
     if (happyTimeoutRef.current != null) {
       clearTimeout(happyTimeoutRef.current)
@@ -22,9 +25,13 @@ export function CarmenScene() {
     happyTargetRef.current = mood === 'happy' ? 1 : 0
   }, [])
 
-  const { status, error, connect, disconnect, speakRef } = useElevenLabsVoice({
-    onExpressionChange: handleExpressionChange,
-  })
+  // Both hooks are always called (Rules of Hooks) — neither opens a connection
+  // until connect() is invoked by a click, so mounting both idle is harmless.
+  // VOICE_PROVIDER picks which one actually gets wired up to the UI below.
+  const openaiVoice = useRealtimeVoice({ onExpressionChange: handleExpressionChange })
+  const elevenLabsVoice = useElevenLabsVoice({ onExpressionChange: handleExpressionChange })
+  const { status, error, connect, disconnect, speakRef } =
+    VOICE_PROVIDER === 'elevenlabs' ? elevenLabsVoice : openaiVoice
 
   // Temporary manual trigger for demoing the happy-eyes animation without a live
   // voice connection — pulses happy for a bit, then reverts. The real signal above
