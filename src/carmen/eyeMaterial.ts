@@ -12,6 +12,7 @@ const vertexShader = /* glsl */ `
 const fragmentShader = /* glsl */ `
   uniform float uBlink;
   uniform float uSpeak;
+  uniform float uHappy;
   uniform vec2 uLook;
   uniform vec3 uColorOuter;
   uniform vec3 uColorInner;
@@ -22,6 +23,12 @@ const fragmentShader = /* glsl */ `
   float sdRoundBox(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + r;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+  }
+
+  // rounded arc: sc = (sin(aperture), cos(aperture)), ra = centerline radius, rb = half-thickness
+  float sdArc(vec2 p, vec2 sc, float ra, float rb) {
+    p.x = abs(p.x);
+    return ((sc.y * p.x > sc.x * p.y) ? length(p - sc * ra) : abs(length(p) - ra)) - rb;
   }
 
   void main() {
@@ -44,15 +51,30 @@ const fragmentShader = /* glsl */ `
     float gradT = clamp(1.0 - length((p - gradCenter) / vec2(0.62, 0.95)), 0.0, 1.0);
     vec3 bodyColor = mix(uColorOuter, uColorInner, gradT);
 
+    float happy = clamp(uHappy, 0.0, 1.0);
+
     // pupil, follows uLook
     vec2 look = uLook * 0.10;
     vec2 pp = p - vec2(0.0, -0.18) - look;
+    float blinkSquash = mix(1.0, 0.05, blink);
+
+    // neutral pupil: a capsule
     float pupilH = mix(0.40, 0.01, blink) * (1.0 + speak * 0.22);
     vec2 pupilHalf = vec2(0.235 * (1.0 + speak * 0.1), pupilH);
     float pupilR = min(0.22, pupilHalf.y * 0.95 + 0.015);
-    float dPupil = sdRoundBox(pp, pupilHalf, pupilR);
-    float pupilMask = smoothstep(0.02, -0.02, dPupil);
-    float pupilGlow = exp(-max(dPupil, 0.0) * 3.5);
+    float dPupilBase = sdRoundBox(pp, pupilHalf, pupilR);
+    float baseMask = smoothstep(0.02, -0.02, dPupilBase);
+    float baseGlow = exp(-max(dPupilBase, 0.0) * 3.5);
+
+    // happy pupil: an upward-arching smile, squashed by blink like the base pupil
+    vec2 ppSmileCenter = p - vec2(0.0, -0.02) - look;
+    vec2 ppArc = vec2(ppSmileCenter.x, ppSmileCenter.y / blinkSquash);
+    float dSmile = sdArc(ppArc, vec2(sin(1.1), cos(1.1)), 0.33, 0.085 * (1.0 + speak * 0.3));
+    float smileMask = smoothstep(0.02, -0.02, dSmile);
+    float smileGlow = exp(-max(dSmile, 0.0) * 3.5);
+
+    float pupilMask = mix(baseMask, smileMask, happy);
+    float pupilGlow = mix(baseGlow, smileGlow, happy);
 
     // top specular highlight
     vec2 hp = p - vec2(0.30, 0.55) - look * 0.4;
@@ -93,6 +115,7 @@ export const EyeMaterial = shaderMaterial(
   {
     uBlink: 0,
     uSpeak: 0,
+    uHappy: 0,
     uLook: new THREE.Vector2(0, 0),
     uColorOuter: new THREE.Color('#8a3a05'),
     uColorInner: new THREE.Color('#ffb84d'),

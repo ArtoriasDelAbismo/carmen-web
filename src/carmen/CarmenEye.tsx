@@ -7,9 +7,10 @@ type CarmenEyeProps = {
   blinkRef: MutableRefObject<number>
   lookRef: MutableRefObject<[number, number]>
   speakRef: MutableRefObject<number>
+  happyRef: MutableRefObject<number>
 }
 
-export function CarmenEye({ x, blinkRef, lookRef, speakRef }: CarmenEyeProps) {
+export function CarmenEye({ x, blinkRef, lookRef, speakRef, happyRef }: CarmenEyeProps) {
   const material = useMemo(
     () => new EyeMaterial({ transparent: true, depthWrite: false }),
     [],
@@ -18,6 +19,7 @@ export function CarmenEye({ x, blinkRef, lookRef, speakRef }: CarmenEyeProps) {
   useFrame(() => {
     material.uniforms.uBlink.value = blinkRef.current
     material.uniforms.uSpeak.value = speakRef.current
+    material.uniforms.uHappy.value = happyRef.current
     material.uniforms.uLook.value.set(lookRef.current[0], lookRef.current[1])
   })
 
