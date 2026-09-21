@@ -20,6 +20,30 @@ export function CarmenScene() {
     }, durationMs)
   }, [])
 
+  const testSpeakRafRef = useRef<number | null>(null)
+
+  // Temporary manual trigger for demoing the speaking look-around animation without a
+  // live voice connection. Feeds a synthetic amplitude into the same speakRef the real
+  // WebRTC audio analyser drives, so CarmenFace can't tell the difference.
+  const triggerTestSpeaking = useCallback(
+    (durationMs = 6000) => {
+      if (testSpeakRafRef.current != null) cancelAnimationFrame(testSpeakRafRef.current)
+      const start = performance.now()
+      const tick = (now: number) => {
+        const elapsed = now - start
+        if (elapsed > durationMs) {
+          speakRef.current = 0
+          testSpeakRafRef.current = null
+          return
+        }
+        speakRef.current = 0.18 + 0.12 * Math.abs(Math.sin(elapsed * 0.012))
+        testSpeakRafRef.current = requestAnimationFrame(tick)
+      }
+      testSpeakRafRef.current = requestAnimationFrame(tick)
+    },
+    [speakRef],
+  )
+
   const label =
     status === 'connected'
       ? 'End conversation'
@@ -91,6 +115,23 @@ export function CarmenScene() {
             }}
           >
             😊
+          </button>
+          <button
+            type="button"
+            onClick={() => triggerTestSpeaking()}
+            title="Temporary manual trigger for the speaking look-around animation"
+            style={{
+              padding: '12px 20px',
+              borderRadius: 999,
+              border: '1px solid #ff9a33',
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: 'transparent',
+              color: '#ff9a33',
+            }}
+          >
+            🗣️
           </button>
         </div>
         {error && <span style={{ color: '#ff8080', fontSize: 13 }}>{error}</span>}

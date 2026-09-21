@@ -9,15 +9,58 @@ type CarmenFaceProps = {
   happyTargetRef: MutableRefObject<number>
 }
 
+// center -> left -> center -> right -> (loops back to center), from the Figma
+// "Ojos izquierda" / "Ojos derecha" look states.
+const GLANCE_TARGETS = [0, -1, 0, 1]
+const GLANCE_STEP_SECONDS = 0.9
+const SPEAKING_ON_THRESHOLD = 0.06
+const SPEAKING_ON_DELAY = 0.15
+const SPEAKING_OFF_DELAY = 0.5
+
 export function CarmenFace({ speakRef, happyTargetRef }: CarmenFaceProps) {
   const blink = useBlink()
   const happy = useRef(0)
   const look = useRef<[number, number]>([0, 0])
   const group = useRef<THREE.Group>(null)
 
+  const isSpeaking = useRef(false)
+  const voiceTimer = useRef(0)
+  const silenceTimer = useRef(0)
+  const glancePhase = useRef(0)
+  const glanceTimer = useRef(0)
+
   useFrame((state, delta) => {
-    look.current[0] += (state.pointer.x - look.current[0]) * 0.08
-    look.current[1] += (state.pointer.y - look.current[1]) * 0.08
+    // hysteresis so isolated loud/quiet frames don't flicker the gesture on and off
+    if (speakRef.current > SPEAKING_ON_THRESHOLD) {
+      voiceTimer.current += delta
+      silenceTimer.current = 0
+    } else {
+      silenceTimer.current += delta
+      voiceTimer.current = 0
+    }
+    if (!isSpeaking.current && voiceTimer.current > SPEAKING_ON_DELAY) isSpeaking.current = true
+    if (isSpeaking.current && silenceTimer.current > SPEAKING_OFF_DELAY) isSpeaking.current = false
+
+    let targetX: number
+    let targetY: number
+
+    if (isSpeaking.current) {
+      glanceTimer.current += delta
+      if (glanceTimer.current > GLANCE_STEP_SECONDS) {
+        glanceTimer.current = 0
+        glancePhase.current = (glancePhase.current + 1) % GLANCE_TARGETS.length
+      }
+      targetX = GLANCE_TARGETS[glancePhase.current]
+      targetY = 0
+    } else {
+      glanceTimer.current = 0
+      glancePhase.current = 0
+      targetX = state.pointer.x
+      targetY = state.pointer.y
+    }
+
+    look.current[0] += (targetX - look.current[0]) * 0.08
+    look.current[1] += (targetY - look.current[1]) * 0.08
 
     happy.current += (happyTargetRef.current - happy.current) * Math.min(1, delta * 7)
 
