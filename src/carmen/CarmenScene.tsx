@@ -14,7 +14,14 @@ function ResponsiveCamera() {
   return <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={zoom} />
 }
 
-export function CarmenScene() {
+type CarmenSceneProps = {
+  // Shrinks the "Talk to Carmen" button, for when CarmenScene is rendered inside
+  // a small container (e.g. embedded in a phone-screen cutout) rather than
+  // filling the viewport.
+  compact?: boolean
+}
+
+export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const happyTargetRef = useRef(0)
   const happyTimeoutRef = useRef<number | null>(null)
 
@@ -99,7 +106,7 @@ export function CarmenScene() {
         </EffectComposer>
       </Canvas>
 
-      <div className="carmen-controls">
+      <div className={`carmen-controls ${compact ? 'carmen-controls--compact' : ''}`}>
         <div className="carmen-controls__row">
           <button
             type="button"

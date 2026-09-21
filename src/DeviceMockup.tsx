@@ -1,13 +1,14 @@
 import { CarmenScene } from './carmen/CarmenScene'
 
 // Screen quad measured directly against the 1600x900 source image (device-mockup.jpg)
-// by detecting the black screen region's pixel bounds, then expressed as percentages
+// by detecting the black screen region's pixel bounds (with grid-lined crops of each
+// edge to stay inside the bezel, not the case outline), then expressed as percentages
 // so it stays correct regardless of how large the device image is rendered.
 const SCREEN = {
-  left: (450 / 1600) * 100,
-  top: (110 / 900) * 100,
-  width: ((1150 - 450) / 1600) * 100,
-  height: ((445 - 110) / 900) * 100,
+  left: (445 / 1600) * 100,
+  top: (128 / 900) * 100,
+  width: ((1128 - 445) / 1600) * 100,
+  height: ((435 - 128) / 900) * 100,
 }
 
 export function DeviceMockup() {
@@ -53,7 +54,7 @@ export function DeviceMockup() {
             background: '#141414',
           }}
         >
-          <CarmenScene />
+          <CarmenScene compact />
         </div>
       </div>
     </div>

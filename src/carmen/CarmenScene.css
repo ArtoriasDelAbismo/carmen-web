@@ -67,3 +67,20 @@
     padding: 11px 16px;
   }
 }
+
+/* CarmenScene rendered inside a small container (e.g. embedded in a phone-screen
+   cutout) instead of filling the viewport — higher specificity than the media
+   query above so it wins regardless of the page's actual viewport width. */
+.carmen-controls--compact {
+  bottom: 6%;
+  gap: 3px;
+  padding: 0 6%;
+}
+
+.carmen-controls--compact .carmen-btn {
+  padding: 3px 10px;
+  min-height: 16px;
+  font-size: 8px;
+  border-radius: 999px;
+}
+
