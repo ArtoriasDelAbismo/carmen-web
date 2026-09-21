@@ -11,6 +11,7 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   uniform float uBlink;
+  uniform float uSpeak;
   uniform vec2 uLook;
   uniform vec3 uColorOuter;
   uniform vec3 uColorInner;
@@ -34,8 +35,10 @@ const fragmentShader = /* glsl */ `
     float bodyR = min(0.52, bodyHalf.y * 0.95 + 0.02);
     float dBody = sdRoundBox(p, bodyHalf, bodyR);
 
+    float speak = clamp(uSpeak, 0.0, 1.0);
+
     float bodyMask = smoothstep(0.015, -0.015, dBody);
-    float outerGlow = exp(-max(dBody, 0.0) * 3.6) * 0.75 * (1.0 - blink * 0.6);
+    float outerGlow = exp(-max(dBody, 0.0) * 3.6) * 0.75 * (1.0 - blink * 0.6) * (1.0 + speak * 0.5);
 
     vec2 gradCenter = vec2(0.0, -0.08);
     float gradT = clamp(1.0 - length((p - gradCenter) / vec2(0.62, 0.95)), 0.0, 1.0);
@@ -44,8 +47,8 @@ const fragmentShader = /* glsl */ `
     // pupil, follows uLook
     vec2 look = uLook * 0.10;
     vec2 pp = p - vec2(0.0, -0.18) - look;
-    float pupilH = mix(0.40, 0.01, blink);
-    vec2 pupilHalf = vec2(0.235, pupilH);
+    float pupilH = mix(0.40, 0.01, blink) * (1.0 + speak * 0.22);
+    vec2 pupilHalf = vec2(0.235 * (1.0 + speak * 0.1), pupilH);
     float pupilR = min(0.22, pupilHalf.y * 0.95 + 0.015);
     float dPupil = sdRoundBox(pp, pupilHalf, pupilR);
     float pupilMask = smoothstep(0.02, -0.02, dPupil);
@@ -89,6 +92,7 @@ const fragmentShader = /* glsl */ `
 export const EyeMaterial = shaderMaterial(
   {
     uBlink: 0,
+    uSpeak: 0,
     uLook: new THREE.Vector2(0, 0),
     uColorOuter: new THREE.Color('#8a3a05'),
     uColorInner: new THREE.Color('#ffb84d'),
