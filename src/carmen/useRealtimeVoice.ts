@@ -5,6 +5,21 @@ export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
 const OPENAI_REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls'
 
+function describeVoiceError(err: unknown): string {
+  if (err instanceof DOMException) {
+    if (err.name === 'NotFoundError') {
+      return 'No microphone found on this device/browser.'
+    }
+    if (err.name === 'NotAllowedError') {
+      return 'Microphone access was blocked. Allow it in the browser site settings and try again.'
+    }
+    if (err.name === 'NotReadableError') {
+      return 'The microphone is in use by another app or unavailable.'
+    }
+  }
+  return err instanceof Error ? err.message : 'Failed to connect'
+}
+
 export function useRealtimeVoice() {
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -145,7 +160,7 @@ export function useRealtimeVoice() {
     } catch (err) {
       console.error('[useRealtimeVoice] connect failed:', err)
       teardown()
-      setError(err instanceof Error ? err.message : 'Failed to connect')
+      setError(describeVoiceError(err))
       setStatus('error')
     }
   }, [status, teardown])
