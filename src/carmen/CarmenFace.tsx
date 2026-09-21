@@ -34,8 +34,8 @@ export function CarmenFace({ speakRef, happyTargetRef }: CarmenFaceProps) {
 
   return (
     <group ref={group}>
-      <CarmenEye x={-1.0} blinkRef={blink} lookRef={look} speakRef={speakRef} happyRef={happy} />
-      <CarmenEye x={1.0} blinkRef={blink} lookRef={look} speakRef={speakRef} happyRef={happy} />
+      <CarmenEye x={-1.2} blinkRef={blink} lookRef={look} speakRef={speakRef} happyRef={happy} />
+      <CarmenEye x={1.2} blinkRef={blink} lookRef={look} speakRef={speakRef} happyRef={happy} />
     </group>
   )
 }

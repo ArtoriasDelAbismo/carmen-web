@@ -34,10 +34,13 @@ const fragmentShader = /* glsl */ `
   void main() {
     // shrink the shape into the UV square so the outer glow has margin to fade out in
     vec2 p = (vUv * 2.0 - 1.0) / 0.66;
+    // Figma's eyes are much wider relative to their height than this started out —
+    // stretch every x-dependent shape (body, pupil, highlights, reflections) uniformly.
+    p.x /= 1.73;
     float blink = clamp(uBlink, 0.0, 1.0);
 
     // eyelid: outer glowing body squashes vertically to blink
-    float bodyH = mix(0.86, 0.035, blink);
+    float bodyH = mix(1.0, 0.04, blink);
     vec2 bodyHalf = vec2(0.56, bodyH);
     float bodyR = min(0.52, bodyHalf.y * 0.95 + 0.02);
     float dBody = sdRoundBox(p, bodyHalf, bodyR);
@@ -48,7 +51,7 @@ const fragmentShader = /* glsl */ `
     float outerGlow = exp(-max(dBody, 0.0) * 3.6) * 0.75 * (1.0 - blink * 0.6) * (1.0 + speak * 0.5);
 
     vec2 gradCenter = vec2(0.0, -0.08);
-    float gradT = clamp(1.0 - length((p - gradCenter) / vec2(0.62, 0.95)), 0.0, 1.0);
+    float gradT = clamp(1.0 - length((p - gradCenter) / vec2(0.62, 1.1)), 0.0, 1.0);
     vec3 bodyColor = mix(uColorOuter, uColorInner, gradT);
 
     float happy = clamp(uHappy, 0.0, 1.0);
