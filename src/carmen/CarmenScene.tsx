@@ -9,10 +9,14 @@ import { useResponsiveZoom } from './useResponsiveZoom'
 import { VOICE_PROVIDER } from '../lib/config'
 import './CarmenScene.css'
 
+function ResponsiveCamera() {
+  const zoom = useResponsiveZoom()
+  return <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={zoom} />
+}
+
 export function CarmenScene() {
   const happyTargetRef = useRef(0)
   const happyTimeoutRef = useRef<number | null>(null)
-  const zoom = useResponsiveZoom()
 
   // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice /
   // useElevenLabsVoice) — this is the real signal; it persists until she calls
@@ -81,7 +85,7 @@ export function CarmenScene() {
   return (
     <div style={{ width: '100%', height: '100%', background: '#141414', position: 'relative' }}>
       <Canvas orthographic dpr={[1, 2]}>
-        <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={zoom} />
+        <ResponsiveCamera />
         <color attach="background" args={['#141414']} />
         <CarmenFace speakRef={speakRef} happyTargetRef={happyTargetRef} />
         <EffectComposer>

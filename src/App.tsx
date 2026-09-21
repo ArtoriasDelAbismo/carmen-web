@@ -1,7 +1,7 @@
-import { CarmenScene } from './carmen/CarmenScene'
+import { DeviceMockup } from './DeviceMockup'
 
 function App() {
-  return <CarmenScene />
+  return <DeviceMockup />
 }
 
 export default App
