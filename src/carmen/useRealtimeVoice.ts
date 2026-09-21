@@ -97,6 +97,16 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
     setError(null)
     setStatus('connecting')
 
+    // Create + "unlock" the audio element synchronously, still inside the click
+    // gesture that called connect(). iOS Safari blocks .play() on elements whose
+    // playback wasn't associated with a user gesture — and the real srcObject
+    // only becomes available later inside pc.ontrack, well after every await
+    // below has left that gesture's call stack.
+    const audioEl = document.createElement('audio')
+    audioEl.autoplay = true
+    audioElRef.current = audioEl
+    audioEl.play().catch(() => {})
+
     try {
       const tokenRes = await fetch(`${BACKEND_URL}/api/realtime/session`, {
         method: 'POST',
@@ -114,10 +124,6 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
 
       const pc = new RTCPeerConnection()
       pcRef.current = pc
-
-      const audioEl = document.createElement('audio')
-      audioEl.autoplay = true
-      audioElRef.current = audioEl
 
       pc.ontrack = (event) => {
         const [remoteStream] = event.streams

@@ -1,12 +1,16 @@
 import { useCallback, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
+import { OrthographicCamera } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { CarmenFace } from './CarmenFace'
 import { useRealtimeVoice, type VoiceExpression } from './useRealtimeVoice'
+import { useResponsiveZoom } from './useResponsiveZoom'
+import './CarmenScene.css'
 
 export function CarmenScene() {
   const happyTargetRef = useRef(0)
   const happyTimeoutRef = useRef<number | null>(null)
+  const zoom = useResponsiveZoom()
 
   // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice) — this
   // is the real signal; it persists until she calls the tool again, no timeout.
@@ -66,7 +70,8 @@ export function CarmenScene() {
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#141414', position: 'relative' }}>
-      <Canvas orthographic camera={{ zoom: 140, position: [0, 0, 10] }} dpr={[1, 2]}>
+      <Canvas orthographic dpr={[1, 2]}>
+        <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={zoom} />
         <color attach="background" args={['#141414']} />
         <CarmenFace speakRef={speakRef} happyTargetRef={happyTargetRef} />
         <EffectComposer>
@@ -80,35 +85,15 @@ export function CarmenScene() {
         </EffectComposer>
       </Canvas>
 
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '8%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-          fontFamily: 'system-ui, sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 10 }}>
+      <div className="carmen-controls">
+        <div className="carmen-controls__row">
           <button
             type="button"
             onClick={status === 'connected' ? disconnect : connect}
             disabled={status === 'connecting'}
-            style={{
-              padding: '12px 28px',
-              borderRadius: 999,
-              border: 'none',
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: status === 'connecting' ? 'default' : 'pointer',
-              background: status === 'connected' ? '#e05a3a' : '#ff9a33',
-              color: '#1a1200',
-              opacity: status === 'connecting' ? 0.7 : 1,
-            }}
+            className={`carmen-btn ${status === 'connected' ? 'carmen-btn--talking' : ''} ${
+              status === 'connecting' ? 'carmen-btn--connecting' : ''
+            }`}
           >
             {label}
           </button>
@@ -116,16 +101,7 @@ export function CarmenScene() {
             type="button"
             onClick={() => triggerHappy()}
             title="Temporary manual trigger for the happy-eyes animation"
-            style={{
-              padding: '12px 20px',
-              borderRadius: 999,
-              border: '1px solid #ff9a33',
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: 'transparent',
-              color: '#ff9a33',
-            }}
+            className="carmen-btn carmen-btn--ghost"
           >
             😊
           </button>
@@ -133,21 +109,12 @@ export function CarmenScene() {
             type="button"
             onClick={() => triggerTestSpeaking()}
             title="Temporary manual trigger for the speaking look-around animation"
-            style={{
-              padding: '12px 20px',
-              borderRadius: 999,
-              border: '1px solid #ff9a33',
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: 'transparent',
-              color: '#ff9a33',
-            }}
+            className="carmen-btn carmen-btn--ghost"
           >
             🗣️
           </button>
         </div>
-        {error && <span style={{ color: '#ff8080', fontSize: 13 }}>{error}</span>}
+        {error && <span className="carmen-error">{error}</span>}
       </div>
     </div>
   )
