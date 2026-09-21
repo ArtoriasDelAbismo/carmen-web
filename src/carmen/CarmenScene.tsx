@@ -2,16 +2,29 @@ import { useCallback, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { CarmenFace } from './CarmenFace'
-import { useRealtimeVoice } from './useRealtimeVoice'
+import { useRealtimeVoice, type VoiceExpression } from './useRealtimeVoice'
 
 export function CarmenScene() {
-  const { status, error, connect, disconnect, speakRef } = useRealtimeVoice()
-
   const happyTargetRef = useRef(0)
   const happyTimeoutRef = useRef<number | null>(null)
 
-  // Temporary manual trigger for demoing the happy-eyes animation. Once Carmen's
-  // conversation events carry sentiment, replace this call site with that signal.
+  // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice) — this
+  // is the real signal; it persists until she calls the tool again, no timeout.
+  const handleExpressionChange = useCallback((mood: VoiceExpression) => {
+    if (happyTimeoutRef.current != null) {
+      clearTimeout(happyTimeoutRef.current)
+      happyTimeoutRef.current = null
+    }
+    happyTargetRef.current = mood === 'happy' ? 1 : 0
+  }, [])
+
+  const { status, error, connect, disconnect, speakRef } = useRealtimeVoice({
+    onExpressionChange: handleExpressionChange,
+  })
+
+  // Temporary manual trigger for demoing the happy-eyes animation without a live
+  // voice connection — pulses happy for a bit, then reverts. The real signal above
+  // (handleExpressionChange) overrides this the moment Carmen calls the tool.
   const triggerHappy = useCallback((durationMs = 2400) => {
     happyTargetRef.current = 1
     if (happyTimeoutRef.current != null) clearTimeout(happyTimeoutRef.current)

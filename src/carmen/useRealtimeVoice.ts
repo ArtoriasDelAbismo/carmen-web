@@ -5,6 +5,29 @@ export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
 const OPENAI_REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls'
 
+// Lets Carmen silently signal her mood alongside her spoken reply — see the
+// "Acciones disponibles" block in the backend's carmen.md prompt for when she's
+// instructed to call it.
+const SET_EXPRESSION_TOOL = {
+  type: 'function',
+  name: 'set_expression',
+  description:
+    "Cambia la expresión de tus ojos para reflejar tu estado de ánimo actual. Llamala en paralelo a tu respuesta hablada, nunca en lugar de hablar.",
+  parameters: {
+    type: 'object',
+    properties: {
+      mood: {
+        type: 'string',
+        enum: ['happy', 'neutral'],
+        description: 'El estado de ánimo a reflejar en tus ojos ahora mismo.',
+      },
+    },
+    required: ['mood'],
+  },
+}
+
+export type VoiceExpression = 'happy' | 'neutral'
+
 function describeVoiceError(err: unknown): string {
   if (err instanceof DOMException) {
     if (err.name === 'NotFoundError') {
@@ -20,9 +43,13 @@ function describeVoiceError(err: unknown): string {
   return err instanceof Error ? err.message : 'Failed to connect'
 }
 
-export function useRealtimeVoice() {
+export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceExpression) => void }) {
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [error, setError] = useState<string | null>(null)
+
+  // ref (not a dep of connect) so the callback can change across renders without reconnecting
+  const onExpressionChangeRef = useRef(options?.onExpressionChange)
+  onExpressionChangeRef.current = options?.onExpressionChange
 
   // audio amplitude of Carmen's live reply, smoothed 0..1 — read every frame by CarmenFace
   const speakRef = useRef(0)
@@ -126,16 +153,54 @@ export function useRealtimeVoice() {
         dc.send(
           JSON.stringify({
             type: 'session.update',
-            session: { turn_detection: { type: 'server_vad' } },
+            session: {
+              turn_detection: { type: 'server_vad' },
+              tools: [SET_EXPRESSION_TOOL],
+            },
           }),
         )
       })
       dc.addEventListener('message', (event) => {
+        let msg: any
         try {
-          const msg = JSON.parse(event.data)
-          if (msg.type === 'error') console.error('[realtime event error]', msg)
+          msg = JSON.parse(event.data)
         } catch {
-          // non-JSON payload, ignore
+          return // non-JSON payload, ignore
+        }
+
+        if (msg.type === 'error') {
+          console.error('[realtime event error]', msg)
+          return
+        }
+
+        if (msg.type === 'response.done') {
+          const outputItems = msg.response?.output ?? []
+          for (const item of outputItems) {
+            if (item?.type !== 'function_call' || item?.name !== 'set_expression') continue
+
+            let mood: VoiceExpression | undefined
+            try {
+              mood = JSON.parse(item.arguments ?? '{}').mood
+            } catch {
+              console.error('[useRealtimeVoice] bad set_expression arguments:', item.arguments)
+            }
+            if (mood === 'happy' || mood === 'neutral') {
+              onExpressionChangeRef.current?.(mood)
+            }
+
+            // acknowledge so the call doesn't dangle in conversation state — no
+            // response.create after it, since she shouldn't say anything about it
+            dc.send(
+              JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: item.call_id,
+                  output: '{"ok":true}',
+                },
+              }),
+            )
+          }
         }
       })
 
