@@ -87,7 +87,7 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
       ? 'End conversation'
       : status === 'connecting'
         ? 'Connecting…'
-        : 'Talk to Carmen'
+        : 'Hablar'
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#141414', position: 'relative' }}>
