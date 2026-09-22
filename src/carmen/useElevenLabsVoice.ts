@@ -3,7 +3,7 @@ import { Conversation, type Conversation as ConversationInstance } from '@eleven
 import { BACKEND_URL, DEV_JWT } from '../lib/config'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
-export type VoiceExpression = 'happy' | 'concerned' | 'neutral'
+export type VoiceExpression = 'happy' | 'concerned' | 'sad' | 'neutral'
 
 function describeVoiceError(err: unknown): string {
   if (err instanceof DOMException) {
