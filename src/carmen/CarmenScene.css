@@ -1,3 +1,25 @@
+/* Whole-screen invisible tap target — sits under .carmen-controls (painted/hit
+   after it in DOM order, so those buttons stay clickable on top) and above the
+   Canvas. Tap anywhere on Carmen to wake her and start talking, tap anywhere
+   again to send her back to sleep. */
+.carmen-tap-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 1;
+}
+
+.carmen-tap-overlay:disabled {
+  cursor: default;
+}
+
 .carmen-controls {
   position: absolute;
   left: 50%;
@@ -11,6 +33,44 @@
   width: 100%;
   padding: 0 16px;
   box-sizing: border-box;
+  z-index: 2;
+}
+
+.carmen-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+}
+
+.carmen-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff9a33;
+  animation: carmen-dot-bounce 1.1s ease-in-out infinite;
+}
+
+.carmen-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.carmen-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes carmen-dot-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
 }
 
 .carmen-controls__row {
@@ -75,6 +135,16 @@
   bottom: 6%;
   gap: 3px;
   padding: 0 6%;
+}
+
+.carmen-controls--compact .carmen-dots {
+  height: 16px;
+  gap: 3px;
+}
+
+.carmen-controls--compact .carmen-dots span {
+  width: 4px;
+  height: 4px;
 }
 
 .carmen-controls--compact .carmen-btn {

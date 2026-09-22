@@ -9,19 +9,24 @@ type CarmenEyeProps = {
   speakRef: MutableRefObject<number>
   happyRef: MutableRefObject<number>
   concernedRef: MutableRefObject<number>
+  sadRef: MutableRefObject<number>
 }
 
-export function CarmenEye({ x, blinkRef, lookRef, speakRef, happyRef, concernedRef }: CarmenEyeProps) {
-  const material = useMemo(
-    () => new EyeMaterial({ transparent: true, depthWrite: false }),
-    [],
-  )
+export function CarmenEye({ x, blinkRef, lookRef, speakRef, happyRef, concernedRef, sadRef }: CarmenEyeProps) {
+  const material = useMemo(() => {
+    const mat = new EyeMaterial({ transparent: true, depthWrite: false })
+    // Which side of the face this eye is on — the sad expression's brow-chamfer
+    // mirrors off this so both inner (nose-side) corners droop symmetrically.
+    mat.uniforms.uSide.value = Math.sign(x)
+    return mat
+  }, [x])
 
   useFrame(() => {
     material.uniforms.uBlink.value = blinkRef.current
     material.uniforms.uSpeak.value = speakRef.current
     material.uniforms.uHappy.value = happyRef.current
     material.uniforms.uConcerned.value = concernedRef.current
+    material.uniforms.uSad.value = sadRef.current
     material.uniforms.uLook.value.set(lookRef.current[0], lookRef.current[1])
   })
 

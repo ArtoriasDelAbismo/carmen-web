@@ -19,6 +19,8 @@ const fragmentShader = /* glsl */ `
   uniform float uSpeak;
   uniform float uHappy;
   uniform float uConcerned;
+  uniform float uSad;
+  uniform float uSide;
   uniform vec2 uLook;
   uniform vec3 uColorOuter;
   uniform vec3 uColorInner;
@@ -44,6 +46,7 @@ const fragmentShader = /* glsl */ `
     float speak = clamp(uSpeak, 0.0, 1.0);
     float happy = clamp(uHappy, 0.0, 1.0);
     float concerned = clamp(uConcerned, 0.0, 1.0);
+    float sad = clamp(uSad, 0.0, 1.0);
     // matches carmen.md's "bajá el tono... menos energía" — visibly dimmer, not just a shape change
     float energy = 1.0 - concerned * 0.28;
 
@@ -53,6 +56,17 @@ const fragmentShader = /* glsl */ `
     vec2 bodyHalf = vec2(0.8637, bodyH);
     float bodyR = min(bodyHalf.x, bodyHalf.y) * 0.92;
     float dBody = sdRoundBox(p, bodyHalf, bodyR);
+
+    // sad: chamfers the outer (away-from-nose) top corner off with a diagonal
+    // cut, mirrored per eye via uSide so both outer corners droop symmetrically —
+    // the "puppy-dog eyes" brow shape from the Figma "Ojos tristes" reference.
+    float outerX = p.x * uSide;
+    vec2 cutA = vec2(0.08 * bodyHalf.x, 0.95 * bodyHalf.y);
+    vec2 cutB = vec2(0.85 * bodyHalf.x, 0.05 * bodyHalf.y);
+    vec2 cutDir = normalize(cutB - cutA);
+    vec2 cutNormal = vec2(-cutDir.y, cutDir.x);
+    float dCut = dot(vec2(outerX, p.y) - cutA, cutNormal);
+    dBody = mix(dBody, max(dBody, dCut), sad);
 
     float bodyMask = smoothstep(0.015, -0.015, dBody);
     float outerGlow = exp(-max(dBody, 0.0) * 3.6) * 0.75 * (1.0 - blink * 0.6) * (1.0 + speak * 0.5) * energy;
@@ -84,12 +98,14 @@ const fragmentShader = /* glsl */ `
     float baseMask = 1.0 - smoothstep(0.65, 1.0, pupilDist);
     float baseGlow = baseMask;
 
-    // happy pupil: an upward-arching smile, squashed by blink like the base pupil
-    vec2 ppSmileCenter = p - vec2(0.0, -0.02 * bodyHalf.y) - look;
+    // happy pupil: a bold dome-shaped arc (apex up, flat-ish base), squashed by
+    // blink like the base pupil — sdArc's native "cap" orientation is the correct
+    // one here, matching the Figma "Ojos felices" reference.
+    vec2 ppSmileCenter = p - vec2(0.0, -0.03 * bodyHalf.y) - look;
     vec2 ppArc = vec2(ppSmileCenter.x, ppSmileCenter.y / blinkSquash);
-    float dSmile = sdArc(ppArc, vec2(sin(1.1), cos(1.1)), 0.33 * bodyHalf.y, 0.085 * bodyHalf.y * (1.0 + speak * 0.3));
-    float smileMask = smoothstep(0.02, -0.02, dSmile);
-    float smileGlow = exp(-max(dSmile, 0.0) * 3.5);
+    float dSmile = sdArc(ppArc, vec2(sin(1.1), cos(1.1)), 0.42 * bodyHalf.y, 0.11 * bodyHalf.y * (1.0 + speak * 0.3));
+    float smileMask = smoothstep(0.03, -0.03, dSmile);
+    float smileGlow = exp(-max(dSmile, 0.0) * 3.0);
 
     // concerned has no pupil-shape change of its own — a downward-valley arc here
     // read ambiguously close to the happy smile-arch when tried. Instead it reads
@@ -147,6 +163,8 @@ export const EyeMaterial = shaderMaterial(
     uSpeak: 0,
     uHappy: 0,
     uConcerned: 0,
+    uSad: 0,
+    uSide: 1,
     uLook: new THREE.Vector2(0, 0),
     // exact stops from the body fill's paint0_radial gradient
     uColorOuter: new THREE.Color('#7A4300'),

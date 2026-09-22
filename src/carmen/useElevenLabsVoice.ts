@@ -75,7 +75,7 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
         clientTools: {
           set_expression: async ({ mood }: { mood?: string }) => {
             console.log('[useElevenLabsVoice] set_expression called with mood:', mood)
-            if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
+            if (mood === 'happy' || mood === 'concerned' || mood === 'sad' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }
           },

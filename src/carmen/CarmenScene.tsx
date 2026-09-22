@@ -26,11 +26,13 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const happyTimeoutRef = useRef<number | null>(null)
   const concernedTargetRef = useRef(0)
   const concernedTimeoutRef = useRef<number | null>(null)
+  const sadTargetRef = useRef(0)
+  const sadTimeoutRef = useRef<number | null>(null)
 
   // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice /
   // useElevenLabsVoice) — this is the real signal; it persists until she calls
-  // the tool again, no timeout. happy/concerned are mutually exclusive: whichever
-  // mood she reports wins, the other snaps back to neutral.
+  // the tool again, no timeout. happy/concerned/sad are mutually exclusive:
+  // whichever mood she reports wins, the others snap back to neutral.
   const handleExpressionChange = useCallback((mood: VoiceExpression) => {
     if (happyTimeoutRef.current != null) {
       clearTimeout(happyTimeoutRef.current)
@@ -40,8 +42,13 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
       clearTimeout(concernedTimeoutRef.current)
       concernedTimeoutRef.current = null
     }
+    if (sadTimeoutRef.current != null) {
+      clearTimeout(sadTimeoutRef.current)
+      sadTimeoutRef.current = null
+    }
     happyTargetRef.current = mood === 'happy' ? 1 : 0
     concernedTargetRef.current = mood === 'concerned' ? 1 : 0
+    sadTargetRef.current = mood === 'sad' ? 1 : 0
   }, [])
 
   // Both hooks are always called (Rules of Hooks) — neither opens a connection
@@ -52,66 +59,84 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const { status, error, connect, disconnect, speakRef } =
     VOICE_PROVIDER === 'elevenlabs' ? elevenLabsVoice : openaiVoice
 
-  // Test-only triggers (😊 / 😟 / 🗣️ buttons) — commented out along with the buttons
-  // below. Uncomment both blocks together to bring the manual test controls back.
-  //
-  // // Temporary manual trigger for demoing the happy-eyes animation without a live
-  // // voice connection — pulses happy for a bit, then reverts. The real signal above
-  // // (handleExpressionChange) overrides this the moment Carmen calls the tool.
-  // const triggerHappy = useCallback((durationMs = 2400) => {
-  //   happyTargetRef.current = 1
-  //   if (happyTimeoutRef.current != null) clearTimeout(happyTimeoutRef.current)
-  //   happyTimeoutRef.current = window.setTimeout(() => {
-  //     happyTargetRef.current = 0
-  //   }, durationMs)
-  // }, [])
-  //
-  // // Same, for the concerned-eyes animation.
-  // const triggerConcerned = useCallback((durationMs = 2400) => {
-  //   concernedTargetRef.current = 1
-  //   if (concernedTimeoutRef.current != null) clearTimeout(concernedTimeoutRef.current)
-  //   concernedTimeoutRef.current = window.setTimeout(() => {
-  //     concernedTargetRef.current = 0
-  //   }, durationMs)
-  // }, [])
-  //
-  // const testSpeakRafRef = useRef<number | null>(null)
-  //
-  // // Temporary manual trigger for demoing the speaking look-around animation without a
-  // // live voice connection. Feeds a synthetic amplitude into the same speakRef the real
-  // // WebRTC audio analyser drives, so CarmenFace can't tell the difference.
-  // const triggerTestSpeaking = useCallback(
-  //   (durationMs = 6000) => {
-  //     if (testSpeakRafRef.current != null) cancelAnimationFrame(testSpeakRafRef.current)
-  //     const start = performance.now()
-  //     const tick = (now: number) => {
-  //       const elapsed = now - start
-  //       if (elapsed > durationMs) {
-  //         speakRef.current = 0
-  //         testSpeakRafRef.current = null
-  //         return
-  //       }
-  //       speakRef.current = 0.18 + 0.12 * Math.abs(Math.sin(elapsed * 0.012))
-  //       testSpeakRafRef.current = requestAnimationFrame(tick)
-  //     }
-  //     testSpeakRafRef.current = requestAnimationFrame(tick)
-  //   },
-  //   [speakRef],
-  // )
+  // Test-only triggers (😊 / 😟 / 🗣️ buttons) — lets you preview expressions
+  // without burning voice-API tokens on a live connection.
 
-  const label =
-    status === 'connected'
-      ? 'End conversation'
-      : status === 'connecting'
-        ? 'Connecting…'
-        : 'Hablar'
+  // Temporary manual trigger for demoing the happy-eyes animation without a live
+  // voice connection — pulses happy for a bit, then reverts. The real signal above
+  // (handleExpressionChange) overrides this the moment Carmen calls the tool.
+  const triggerHappy = useCallback((durationMs = 2400) => {
+    happyTargetRef.current = 1
+    if (happyTimeoutRef.current != null) clearTimeout(happyTimeoutRef.current)
+    happyTimeoutRef.current = window.setTimeout(() => {
+      happyTargetRef.current = 0
+    }, durationMs)
+  }, [])
+
+  // Same, for the concerned-eyes animation.
+  const triggerConcerned = useCallback((durationMs = 2400) => {
+    concernedTargetRef.current = 1
+    if (concernedTimeoutRef.current != null) clearTimeout(concernedTimeoutRef.current)
+    concernedTimeoutRef.current = window.setTimeout(() => {
+      concernedTargetRef.current = 0
+    }, durationMs)
+  }, [])
+
+  // Same, for the sad-eyes animation.
+  const triggerSad = useCallback((durationMs = 2400) => {
+    sadTargetRef.current = 1
+    if (sadTimeoutRef.current != null) clearTimeout(sadTimeoutRef.current)
+    sadTimeoutRef.current = window.setTimeout(() => {
+      sadTargetRef.current = 0
+    }, durationMs)
+  }, [])
+
+  const testSpeakRafRef = useRef<number | null>(null)
+
+  // Temporary manual trigger for demoing the speaking look-around animation without a
+  // live voice connection. Feeds a synthetic amplitude into the same speakRef the real
+  // WebRTC audio analyser drives, so CarmenFace can't tell the difference.
+  const triggerTestSpeaking = useCallback(
+    (durationMs = 6000) => {
+      if (testSpeakRafRef.current != null) cancelAnimationFrame(testSpeakRafRef.current)
+      const start = performance.now()
+      const tick = (now: number) => {
+        const elapsed = now - start
+        if (elapsed > durationMs) {
+          speakRef.current = 0
+          testSpeakRafRef.current = null
+          return
+        }
+        speakRef.current = 0.18 + 0.12 * Math.abs(Math.sin(elapsed * 0.012))
+        testSpeakRafRef.current = requestAnimationFrame(tick)
+      }
+      testSpeakRafRef.current = requestAnimationFrame(tick)
+    },
+    [speakRef],
+  )
+
+  // Whole-screen tap target: tap anywhere to wake Carmen and start talking, tap
+  // anywhere again to send her back to sleep. 'error' is treated like 'idle' (tap
+  // retries); 'connecting' ignores taps — the overlay button is disabled then.
+  const handleTap = useCallback(() => {
+    if (status === 'connected') disconnect()
+    else if (status !== 'connecting') connect()
+  }, [status, connect, disconnect])
+
+  const tapAriaLabel = status === 'connected' ? 'Terminar conversación con Carmen' : 'Hablar con Carmen'
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#141414', position: 'relative' }}>
       <Canvas orthographic dpr={[1, 2]}>
         <ResponsiveCamera />
         <color attach="background" args={['#141414']} />
-        <CarmenFace speakRef={speakRef} happyTargetRef={happyTargetRef} concernedTargetRef={concernedTargetRef} />
+        <CarmenFace
+          speakRef={speakRef}
+          happyTargetRef={happyTargetRef}
+          concernedTargetRef={concernedTargetRef}
+          sadTargetRef={sadTargetRef}
+          asleep={status === 'idle'}
+        />
         <EffectComposer>
           <Bloom
             mipmapBlur={false}
@@ -123,19 +148,24 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
         </EffectComposer>
       </Canvas>
 
+      <button
+        type="button"
+        onClick={handleTap}
+        disabled={status === 'connecting'}
+        aria-label={tapAriaLabel}
+        className="carmen-tap-overlay"
+      />
+
       <div className={`carmen-controls ${compact ? 'carmen-controls--compact' : ''}`}>
+        {status === 'connecting' && (
+          <div className="carmen-dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
         <div className="carmen-controls__row">
           <button
-            type="button"
-            onClick={status === 'connected' ? disconnect : connect}
-            disabled={status === 'connecting'}
-            className={`carmen-btn ${status === 'connected' ? 'carmen-btn--talking' : ''} ${
-              status === 'connecting' ? 'carmen-btn--connecting' : ''
-            }`}
-          >
-            {label}
-          </button>
-          {/* <button
             type="button"
             onClick={() => triggerHappy()}
             title="Temporary manual trigger for the happy-eyes animation"
@@ -153,12 +183,20 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
           </button>
           <button
             type="button"
+            onClick={() => triggerSad()}
+            title="Temporary manual trigger for the sad-eyes animation"
+            className="carmen-btn carmen-btn--ghost"
+          >
+            😢
+          </button>
+          <button
+            type="button"
             onClick={() => triggerTestSpeaking()}
             title="Temporary manual trigger for the speaking look-around animation"
             className="carmen-btn carmen-btn--ghost"
           >
             🗣️
-          </button> */}
+          </button>
         </div>
         {error && <span className="carmen-error">{error}</span>}
       </div>

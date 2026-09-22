@@ -8,6 +8,10 @@ type CarmenFaceProps = {
   speakRef: MutableRefObject<number>
   happyTargetRef: MutableRefObject<number>
   concernedTargetRef: MutableRefObject<number>
+  sadTargetRef: MutableRefObject<number>
+  // true while idle/not connected — eyes stay closed (asleep) until the user
+  // taps "Hablar", then ease open.
+  asleep: boolean
 }
 
 // center -> left -> center -> right -> (loops back to center), from the Figma
@@ -18,10 +22,11 @@ const SPEAKING_ON_THRESHOLD = 0.06
 const SPEAKING_ON_DELAY = 0.15
 const SPEAKING_OFF_DELAY = 0.5
 
-export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef }: CarmenFaceProps) {
-  const blink = useBlink()
+export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef, sadTargetRef, asleep }: CarmenFaceProps) {
+  const blink = useBlink(asleep)
   const happy = useRef(0)
   const concerned = useRef(0)
+  const sad = useRef(0)
   const look = useRef<[number, number]>([0, 0])
   const group = useRef<THREE.Group>(null)
 
@@ -66,6 +71,7 @@ export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef }: Car
 
     happy.current += (happyTargetRef.current - happy.current) * Math.min(1, delta * 7)
     concerned.current += (concernedTargetRef.current - concerned.current) * Math.min(1, delta * 7)
+    sad.current += (sadTargetRef.current - sad.current) * Math.min(1, delta * 7)
 
     if (group.current) {
       const speak = speakRef.current
@@ -73,9 +79,10 @@ export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef }: Car
       group.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.6) * 0.01
       // tiny extra bob while Carmen is speaking, on top of the idle motion
       group.current.position.y += Math.sin(state.clock.elapsedTime * 9.0) * 0.012 * speak
-      // a little lift while happy, a small droop while concerned
+      // a little lift while happy, a small droop while concerned or sad
       group.current.position.y += happy.current * 0.03
       group.current.position.y -= concerned.current * 0.02
+      group.current.position.y -= sad.current * 0.02
     }
   })
 
@@ -88,6 +95,7 @@ export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef }: Car
         speakRef={speakRef}
         happyRef={happy}
         concernedRef={concerned}
+        sadRef={sad}
       />
       <CarmenEye
         x={1.13}
@@ -96,6 +104,7 @@ export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef }: Car
         speakRef={speakRef}
         happyRef={happy}
         concernedRef={concerned}
+        sadRef={sad}
       />
     </group>
   )
