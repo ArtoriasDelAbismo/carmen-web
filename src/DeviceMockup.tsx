@@ -45,12 +45,12 @@ export function DeviceMockup() {
         <div
           style={{
             position: 'absolute',
-            left: `calc(${SCREEN.left}% + 5px)`,
-            top: `calc(${SCREEN.top}% + 11px)`,
+            left: `calc(${SCREEN.left}%)`,
+            top: `calc(${SCREEN.top}%)`,
             width: `${SCREEN.width}%`,
             height: `${SCREEN.height}%`,
             overflow: 'hidden',
-            borderRadius: '32px',
+            borderRadius: '22px',
             background: '#141414',
           }}
         >
