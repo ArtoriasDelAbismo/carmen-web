@@ -162,6 +162,10 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
             session: {
               turn_detection: { type: 'server_vad' },
               tools: [SET_EXPRESSION_TOOL],
+              // Without this explicit, tools may be *defined* but not actually
+              // callable — which would explain the model narrating the tool's
+              // name in speech instead of invoking it as a real function call.
+              tool_choice: 'auto',
             },
           }),
         )
@@ -181,6 +185,13 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
 
         if (msg.type === 'response.done') {
           const outputItems = msg.response?.output ?? []
+          // Visibility into what the model actually sent, not just what we handle —
+          // if "function_call" never appears here, she's narrating the tool instead
+          // of invoking it, whatever the transcript/audio sounds like.
+          console.debug(
+            '[useRealtimeVoice] response.done output types:',
+            outputItems.map((i: any) => i?.type),
+          )
           for (const item of outputItems) {
             if (item?.type !== 'function_call' || item?.name !== 'set_expression') continue
 
@@ -190,6 +201,7 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
             } catch {
               console.error('[useRealtimeVoice] bad set_expression arguments:', item.arguments)
             }
+            console.debug('[useRealtimeVoice] set_expression called with mood:', mood)
             if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }

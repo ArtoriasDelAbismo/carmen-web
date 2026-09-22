@@ -74,10 +74,18 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
         connectionType: 'websocket',
         clientTools: {
           set_expression: async ({ mood }: { mood?: string }) => {
+            console.debug('[useElevenLabsVoice] set_expression called with mood:', mood)
             if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }
           },
+        },
+        // Fires if the agent tries to call a tool the SDK has no handler for —
+        // e.g. a name mismatch between the agent's stored config and this app.
+        // If set_expression never shows up in either this or the log above, the
+        // agent isn't actually invoking it as a real tool call at all.
+        onUnhandledClientToolCall: (params) => {
+          console.error('[useElevenLabsVoice] unhandled client tool call:', params)
         },
         onStatusChange: ({ status: sdkStatus }) => {
           if (sdkStatus === 'connected') setStatus('connected')
