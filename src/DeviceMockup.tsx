@@ -50,7 +50,7 @@ export function DeviceMockup() {
             width: `${SCREEN.width}%`,
             height: `${SCREEN.height}%`,
             overflow: 'hidden',
-            borderRadius: '22px',
+            borderRadius: '18px',
             background: '#141414',
           }}
         >
