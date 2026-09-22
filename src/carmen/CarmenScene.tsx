@@ -24,16 +24,24 @@ type CarmenSceneProps = {
 export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const happyTargetRef = useRef(0)
   const happyTimeoutRef = useRef<number | null>(null)
+  const concernedTargetRef = useRef(0)
+  const concernedTimeoutRef = useRef<number | null>(null)
 
   // Driven by Carmen's own set_expression tool calls (see useRealtimeVoice /
   // useElevenLabsVoice) — this is the real signal; it persists until she calls
-  // the tool again, no timeout.
+  // the tool again, no timeout. happy/concerned are mutually exclusive: whichever
+  // mood she reports wins, the other snaps back to neutral.
   const handleExpressionChange = useCallback((mood: VoiceExpression) => {
     if (happyTimeoutRef.current != null) {
       clearTimeout(happyTimeoutRef.current)
       happyTimeoutRef.current = null
     }
+    if (concernedTimeoutRef.current != null) {
+      clearTimeout(concernedTimeoutRef.current)
+      concernedTimeoutRef.current = null
+    }
     happyTargetRef.current = mood === 'happy' ? 1 : 0
+    concernedTargetRef.current = mood === 'concerned' ? 1 : 0
   }, [])
 
   // Both hooks are always called (Rules of Hooks) — neither opens a connection
@@ -44,7 +52,7 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const { status, error, connect, disconnect, speakRef } =
     VOICE_PROVIDER === 'elevenlabs' ? elevenLabsVoice : openaiVoice
 
-  // Test-only triggers (😊 / 🗣️ buttons) — commented out along with the buttons
+  // Test-only triggers (😊 / 😟 / 🗣️ buttons) — commented out along with the buttons
   // below. Uncomment both blocks together to bring the manual test controls back.
   //
   // // Temporary manual trigger for demoing the happy-eyes animation without a live
@@ -55,6 +63,15 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
   //   if (happyTimeoutRef.current != null) clearTimeout(happyTimeoutRef.current)
   //   happyTimeoutRef.current = window.setTimeout(() => {
   //     happyTargetRef.current = 0
+  //   }, durationMs)
+  // }, [])
+  //
+  // // Same, for the concerned-eyes animation.
+  // const triggerConcerned = useCallback((durationMs = 2400) => {
+  //   concernedTargetRef.current = 1
+  //   if (concernedTimeoutRef.current != null) clearTimeout(concernedTimeoutRef.current)
+  //   concernedTimeoutRef.current = window.setTimeout(() => {
+  //     concernedTargetRef.current = 0
   //   }, durationMs)
   // }, [])
   //
@@ -94,7 +111,7 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
       <Canvas orthographic dpr={[1, 2]}>
         <ResponsiveCamera />
         <color attach="background" args={['#141414']} />
-        <CarmenFace speakRef={speakRef} happyTargetRef={happyTargetRef} />
+        <CarmenFace speakRef={speakRef} happyTargetRef={happyTargetRef} concernedTargetRef={concernedTargetRef} />
         <EffectComposer>
           <Bloom
             mipmapBlur={false}
@@ -125,6 +142,14 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
             className="carmen-btn carmen-btn--ghost"
           >
             😊
+          </button>
+          <button
+            type="button"
+            onClick={() => triggerConcerned()}
+            title="Temporary manual trigger for the concerned-eyes animation"
+            className="carmen-btn carmen-btn--ghost"
+          >
+            😟
           </button>
           <button
             type="button"

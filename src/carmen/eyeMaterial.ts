@@ -18,6 +18,7 @@ const fragmentShader = /* glsl */ `
   uniform float uBlink;
   uniform float uSpeak;
   uniform float uHappy;
+  uniform float uConcerned;
   uniform vec2 uLook;
   uniform vec3 uColorOuter;
   uniform vec3 uColorInner;
@@ -42,15 +43,19 @@ const fragmentShader = /* glsl */ `
     float blink = clamp(uBlink, 0.0, 1.0);
     float speak = clamp(uSpeak, 0.0, 1.0);
     float happy = clamp(uHappy, 0.0, 1.0);
+    float concerned = clamp(uConcerned, 0.0, 1.0);
+    // matches carmen.md's "bajá el tono... menos energía" — visibly dimmer, not just a shape change
+    float energy = 1.0 - concerned * 0.28;
 
-    // body: exact 450x521px silhouette bbox aspect (0.8637), eyelid squashes bodyHalf.y to blink
-    float bodyH = mix(1.0, 0.04, blink);
+    // body: exact 450x521px silhouette bbox aspect (0.8637), eyelid squashes bodyHalf.y to blink.
+    // concerned adds a sustained partial droop on top — heavy/downcast eyelids, independent of blink.
+    float bodyH = mix(1.0, 0.04, blink) * mix(1.0, 0.7, concerned);
     vec2 bodyHalf = vec2(0.8637, bodyH);
     float bodyR = min(bodyHalf.x, bodyHalf.y) * 0.92;
     float dBody = sdRoundBox(p, bodyHalf, bodyR);
 
     float bodyMask = smoothstep(0.015, -0.015, dBody);
-    float outerGlow = exp(-max(dBody, 0.0) * 3.6) * 0.75 * (1.0 - blink * 0.6) * (1.0 + speak * 0.5);
+    float outerGlow = exp(-max(dBody, 0.0) * 3.6) * 0.75 * (1.0 - blink * 0.6) * (1.0 + speak * 0.5) * energy;
 
     // radial gradient lifted straight from the fill's paint0_radial: flat bright center
     // until 62% of its radius, then fades to the dark edge color by 97%.
@@ -58,10 +63,11 @@ const fragmentShader = /* glsl */ `
     vec2 gradRadius = vec2(0.9783 * bodyHalf.x, 1.1976 * bodyHalf.y);
     float gradDist = length((p - gradCenter) / gradRadius);
     float gradBlend = smoothstep(0.62, 0.97, gradDist);
-    vec3 bodyColor = mix(uColorInner, uColorOuter, gradBlend);
+    vec3 bodyColor = mix(uColorInner, uColorOuter, gradBlend) * energy;
 
     // pupil, follows uLook — offset/size as fractions of bodyHalf (IRIS: 377x506px within 450x521px body)
-    vec2 look = uLook * 0.10;
+    // gaze drops slightly when concerned — a downcast look, the universal "worried" cue
+    vec2 look = uLook * 0.10 + vec2(0.0, -0.10 * concerned);
     vec2 pupilCenter = vec2(-0.0289 * bodyHalf.x, -0.3282 * bodyHalf.y);
     vec2 pp = p - pupilCenter - look;
     float blinkSquash = mix(1.0, 0.05, blink);
@@ -85,6 +91,11 @@ const fragmentShader = /* glsl */ `
     float smileMask = smoothstep(0.02, -0.02, dSmile);
     float smileGlow = exp(-max(dSmile, 0.0) * 3.5);
 
+    // concerned has no pupil-shape change of its own — a downward-valley arc here
+    // read ambiguously close to the happy smile-arch when tried. Instead it reads
+    // through the droopy bodyH above (which the pupil naturally scales with, since
+    // pupilRadius/pupilCenter are both fractions of bodyHalf.y), the downcast gaze,
+    // and the dimmer "energy" — heavy, downcast, subdued, not a different pupil glyph.
     float pupilMask = mix(baseMask, smileMask, happy);
     float pupilGlow = mix(baseGlow, smileGlow, happy);
 
@@ -93,7 +104,7 @@ const fragmentShader = /* glsl */ `
     vec2 highlightRadius = vec2(0.30 * bodyHalf.x, 0.24 * bodyHalf.y);
     vec2 hp = p - highlightOffset - look * 0.4;
     float hDist = length(hp / highlightRadius);
-    float highlight = smoothstep(1.0, 0.0, hDist) * (1.0 - blink);
+    float highlight = smoothstep(1.0, 0.0, hDist) * (1.0 - blink) * energy;
 
     // glossy side reflections (ReflejoIZ / ReflejoDL)
     vec2 sideLOffset = vec2(-0.8365 * bodyHalf.x, -0.1841 * bodyHalf.y);
@@ -135,6 +146,7 @@ export const EyeMaterial = shaderMaterial(
     uBlink: 0,
     uSpeak: 0,
     uHappy: 0,
+    uConcerned: 0,
     uLook: new THREE.Vector2(0, 0),
     // exact stops from the body fill's paint0_radial gradient
     uColorOuter: new THREE.Color('#7A4300'),

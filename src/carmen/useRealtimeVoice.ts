@@ -18,7 +18,7 @@ const SET_EXPRESSION_TOOL = {
     properties: {
       mood: {
         type: 'string',
-        enum: ['happy', 'neutral'],
+        enum: ['happy', 'concerned', 'neutral'],
         description: 'El estado de ánimo a reflejar en tus ojos ahora mismo.',
       },
     },
@@ -26,7 +26,7 @@ const SET_EXPRESSION_TOOL = {
   },
 }
 
-export type VoiceExpression = 'happy' | 'neutral'
+export type VoiceExpression = 'happy' | 'concerned' | 'neutral'
 
 function describeVoiceError(err: unknown): string {
   if (err instanceof DOMException) {
@@ -190,7 +190,7 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
             } catch {
               console.error('[useRealtimeVoice] bad set_expression arguments:', item.arguments)
             }
-            if (mood === 'happy' || mood === 'neutral') {
+            if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }
 

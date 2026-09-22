@@ -3,7 +3,7 @@ import { Conversation, type Conversation as ConversationInstance } from '@eleven
 import { BACKEND_URL, DEV_JWT } from '../lib/config'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
-export type VoiceExpression = 'happy' | 'neutral'
+export type VoiceExpression = 'happy' | 'concerned' | 'neutral'
 
 function describeVoiceError(err: unknown): string {
   if (err instanceof DOMException) {
@@ -74,7 +74,7 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
         connectionType: 'websocket',
         clientTools: {
           set_expression: async ({ mood }: { mood?: string }) => {
-            if (mood === 'happy' || mood === 'neutral') {
+            if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }
           },

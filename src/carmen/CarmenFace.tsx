@@ -7,6 +7,7 @@ import { useBlink } from './useBlink'
 type CarmenFaceProps = {
   speakRef: MutableRefObject<number>
   happyTargetRef: MutableRefObject<number>
+  concernedTargetRef: MutableRefObject<number>
 }
 
 // center -> left -> center -> right -> (loops back to center), from the Figma
@@ -17,9 +18,10 @@ const SPEAKING_ON_THRESHOLD = 0.06
 const SPEAKING_ON_DELAY = 0.15
 const SPEAKING_OFF_DELAY = 0.5
 
-export function CarmenFace({ speakRef, happyTargetRef }: CarmenFaceProps) {
+export function CarmenFace({ speakRef, happyTargetRef, concernedTargetRef }: CarmenFaceProps) {
   const blink = useBlink()
   const happy = useRef(0)
+  const concerned = useRef(0)
   const look = useRef<[number, number]>([0, 0])
   const group = useRef<THREE.Group>(null)
 
@@ -63,6 +65,7 @@ export function CarmenFace({ speakRef, happyTargetRef }: CarmenFaceProps) {
     look.current[1] += (targetY - look.current[1]) * 0.08
 
     happy.current += (happyTargetRef.current - happy.current) * Math.min(1, delta * 7)
+    concerned.current += (concernedTargetRef.current - concerned.current) * Math.min(1, delta * 7)
 
     if (group.current) {
       const speak = speakRef.current
@@ -70,15 +73,30 @@ export function CarmenFace({ speakRef, happyTargetRef }: CarmenFaceProps) {
       group.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.6) * 0.01
       // tiny extra bob while Carmen is speaking, on top of the idle motion
       group.current.position.y += Math.sin(state.clock.elapsedTime * 9.0) * 0.012 * speak
-      // a little lift while happy
+      // a little lift while happy, a small droop while concerned
       group.current.position.y += happy.current * 0.03
+      group.current.position.y -= concerned.current * 0.02
     }
   })
 
   return (
     <group ref={group}>
-      <CarmenEye x={-1.13} blinkRef={blink} lookRef={look} speakRef={speakRef} happyRef={happy} />
-      <CarmenEye x={1.13} blinkRef={blink} lookRef={look} speakRef={speakRef} happyRef={happy} />
+      <CarmenEye
+        x={-1.13}
+        blinkRef={blink}
+        lookRef={look}
+        speakRef={speakRef}
+        happyRef={happy}
+        concernedRef={concerned}
+      />
+      <CarmenEye
+        x={1.13}
+        blinkRef={blink}
+        lookRef={look}
+        speakRef={speakRef}
+        happyRef={happy}
+        concernedRef={concerned}
+      />
     </group>
   )
 }
