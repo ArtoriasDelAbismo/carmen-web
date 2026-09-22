@@ -82,5 +82,9 @@
   min-height: 16px;
   font-size: 8px;
   border-radius: 999px;
+  /* Mobile browsers auto-boost small font sizes for legibility ("text size
+     adjust"), which silently overrides this on phones unless disabled. */
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
