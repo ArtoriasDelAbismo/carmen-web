@@ -59,61 +59,63 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const { status, error, connect, disconnect, speakRef } =
     VOICE_PROVIDER === 'elevenlabs' ? elevenLabsVoice : openaiVoice
 
-  // Test-only triggers (😊 / 😟 / 🗣️ buttons) — lets you preview expressions
-  // without burning voice-API tokens on a live connection.
-
-  // Temporary manual trigger for demoing the happy-eyes animation without a live
-  // voice connection — pulses happy for a bit, then reverts. The real signal above
-  // (handleExpressionChange) overrides this the moment Carmen calls the tool.
-  const triggerHappy = useCallback((durationMs = 2400) => {
-    happyTargetRef.current = 1
-    if (happyTimeoutRef.current != null) clearTimeout(happyTimeoutRef.current)
-    happyTimeoutRef.current = window.setTimeout(() => {
-      happyTargetRef.current = 0
-    }, durationMs)
-  }, [])
-
-  // Same, for the concerned-eyes animation.
-  const triggerConcerned = useCallback((durationMs = 2400) => {
-    concernedTargetRef.current = 1
-    if (concernedTimeoutRef.current != null) clearTimeout(concernedTimeoutRef.current)
-    concernedTimeoutRef.current = window.setTimeout(() => {
-      concernedTargetRef.current = 0
-    }, durationMs)
-  }, [])
-
-  // Same, for the sad-eyes animation.
-  const triggerSad = useCallback((durationMs = 2400) => {
-    sadTargetRef.current = 1
-    if (sadTimeoutRef.current != null) clearTimeout(sadTimeoutRef.current)
-    sadTimeoutRef.current = window.setTimeout(() => {
-      sadTargetRef.current = 0
-    }, durationMs)
-  }, [])
-
-  const testSpeakRafRef = useRef<number | null>(null)
-
-  // Temporary manual trigger for demoing the speaking look-around animation without a
-  // live voice connection. Feeds a synthetic amplitude into the same speakRef the real
-  // WebRTC audio analyser drives, so CarmenFace can't tell the difference.
-  const triggerTestSpeaking = useCallback(
-    (durationMs = 6000) => {
-      if (testSpeakRafRef.current != null) cancelAnimationFrame(testSpeakRafRef.current)
-      const start = performance.now()
-      const tick = (now: number) => {
-        const elapsed = now - start
-        if (elapsed > durationMs) {
-          speakRef.current = 0
-          testSpeakRafRef.current = null
-          return
-        }
-        speakRef.current = 0.18 + 0.12 * Math.abs(Math.sin(elapsed * 0.012))
-        testSpeakRafRef.current = requestAnimationFrame(tick)
-      }
-      testSpeakRafRef.current = requestAnimationFrame(tick)
-    },
-    [speakRef],
-  )
+  // Test-only triggers (😊 / 😟 / 😢 / 🗣️ buttons) — commented out along with the
+  // buttons below. Uncomment both blocks together to bring the manual test
+  // controls back (lets you preview expressions without burning voice-API
+  // tokens on a live connection).
+  //
+  // // Temporary manual trigger for demoing the happy-eyes animation without a live
+  // // voice connection — pulses happy for a bit, then reverts. The real signal above
+  // // (handleExpressionChange) overrides this the moment Carmen calls the tool.
+  // const triggerHappy = useCallback((durationMs = 2400) => {
+  //   happyTargetRef.current = 1
+  //   if (happyTimeoutRef.current != null) clearTimeout(happyTimeoutRef.current)
+  //   happyTimeoutRef.current = window.setTimeout(() => {
+  //     happyTargetRef.current = 0
+  //   }, durationMs)
+  // }, [])
+  //
+  // // Same, for the concerned-eyes animation.
+  // const triggerConcerned = useCallback((durationMs = 2400) => {
+  //   concernedTargetRef.current = 1
+  //   if (concernedTimeoutRef.current != null) clearTimeout(concernedTimeoutRef.current)
+  //   concernedTimeoutRef.current = window.setTimeout(() => {
+  //     concernedTargetRef.current = 0
+  //   }, durationMs)
+  // }, [])
+  //
+  // // Same, for the sad-eyes animation.
+  // const triggerSad = useCallback((durationMs = 2400) => {
+  //   sadTargetRef.current = 1
+  //   if (sadTimeoutRef.current != null) clearTimeout(sadTimeoutRef.current)
+  //   sadTimeoutRef.current = window.setTimeout(() => {
+  //     sadTargetRef.current = 0
+  //   }, durationMs)
+  // }, [])
+  //
+  // const testSpeakRafRef = useRef<number | null>(null)
+  //
+  // // Temporary manual trigger for demoing the speaking look-around animation without a
+  // // live voice connection. Feeds a synthetic amplitude into the same speakRef the real
+  // // WebRTC audio analyser drives, so CarmenFace can't tell the difference.
+  // const triggerTestSpeaking = useCallback(
+  //   (durationMs = 6000) => {
+  //     if (testSpeakRafRef.current != null) cancelAnimationFrame(testSpeakRafRef.current)
+  //     const start = performance.now()
+  //     const tick = (now: number) => {
+  //       const elapsed = now - start
+  //       if (elapsed > durationMs) {
+  //         speakRef.current = 0
+  //         testSpeakRafRef.current = null
+  //         return
+  //       }
+  //       speakRef.current = 0.18 + 0.12 * Math.abs(Math.sin(elapsed * 0.012))
+  //       testSpeakRafRef.current = requestAnimationFrame(tick)
+  //     }
+  //     testSpeakRafRef.current = requestAnimationFrame(tick)
+  //   },
+  //   [speakRef],
+  // )
 
   // Whole-screen tap target: tap anywhere to wake Carmen and start talking, tap
   // anywhere again to send her back to sleep. 'error' is treated like 'idle' (tap
@@ -165,7 +167,7 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
           </div>
         )}
         <div className="carmen-controls__row">
-          <button
+          {/* <button
             type="button"
             onClick={() => triggerHappy()}
             title="Temporary manual trigger for the happy-eyes animation"
@@ -196,7 +198,7 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
             className="carmen-btn carmen-btn--ghost"
           >
             🗣️
-          </button>
+          </button> */}
         </div>
         {error && <span className="carmen-error">{error}</span>}
       </div>
