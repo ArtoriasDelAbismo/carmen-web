@@ -74,7 +74,7 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
         connectionType: 'websocket',
         clientTools: {
           set_expression: async ({ mood }: { mood?: string }) => {
-            console.debug('[useElevenLabsVoice] set_expression called with mood:', mood)
+            console.log('[useElevenLabsVoice] set_expression called with mood:', mood)
             if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }

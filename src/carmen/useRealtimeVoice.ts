@@ -188,7 +188,7 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
           // Visibility into what the model actually sent, not just what we handle —
           // if "function_call" never appears here, she's narrating the tool instead
           // of invoking it, whatever the transcript/audio sounds like.
-          console.debug(
+          console.log(
             '[useRealtimeVoice] response.done output types:',
             outputItems.map((i: any) => i?.type),
           )
@@ -201,7 +201,7 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
             } catch {
               console.error('[useRealtimeVoice] bad set_expression arguments:', item.arguments)
             }
-            console.debug('[useRealtimeVoice] set_expression called with mood:', mood)
+            console.log('[useRealtimeVoice] set_expression called with mood:', mood)
             if (mood === 'happy' || mood === 'concerned' || mood === 'neutral') {
               onExpressionChangeRef.current?.(mood)
             }
