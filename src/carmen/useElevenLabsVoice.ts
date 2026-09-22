@@ -87,6 +87,19 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
         onUnhandledClientToolCall: (params) => {
           console.error('[useElevenLabsVoice] unhandled client tool call:', params)
         },
+        // Unconditional, fires for every transcript chunk — unlike the two logs
+        // above, which only fire if a real (or rejected) tool call happens. This
+        // is the one that shows whether "setexpressionhappy" is literally in her
+        // spoken text (narrated, not invoked) versus something else going on.
+        onMessage: (props) => {
+          console.log('[useElevenLabsVoice] message:', props.role, props.message)
+        },
+        // Every raw incoming event, type only (payloads can be large/frequent —
+        // audio chunks especially). If "client_tool_call" never appears here at
+        // all, the agent isn't attempting the structured call, full stop.
+        onIncomingEvent: (event: any) => {
+          if (event?.type !== 'audio') console.log('[useElevenLabsVoice] incoming event:', event?.type)
+        },
         onStatusChange: ({ status: sdkStatus }) => {
           if (sdkStatus === 'connected') setStatus('connected')
           else if (sdkStatus === 'connecting') setStatus('connecting')
