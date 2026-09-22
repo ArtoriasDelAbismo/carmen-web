@@ -12,7 +12,7 @@ const SET_EXPRESSION_TOOL = {
   type: 'function',
   name: 'set_expression',
   description:
-    "Cambia la expresión de tus ojos para reflejar tu estado de ánimo actual. Llamala en paralelo a tu respuesta hablada, nunca en lugar de hablar.",
+    "OBLIGATORIA en cada turno, sin excepción: cambia la expresión de tus ojos para reflejar tu estado de ánimo. Llamala SIEMPRE justo antes o en paralelo a cada respuesta hablada, incluso cuando el resultado es 'neutral' — nunca respondas sin haberla llamado primero. No es una acción real, es puramente visual y silenciosa.",
   parameters: {
     type: 'object',
     properties: {
