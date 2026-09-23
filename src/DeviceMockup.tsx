@@ -1,14 +1,16 @@
 import { CarmenScene } from './carmen/CarmenScene'
 
-// Screen quad measured directly against the 1600x900 source image (device-mockup.jpg)
-// by detecting the black screen region's pixel bounds (with grid-lined crops of each
-// edge to stay inside the bezel, not the case outline), then expressed as percentages
-// so it stays correct regardless of how large the device image is rendered.
+// Screen quad measured directly against the 1600x692 source image (device-mockup.jpg,
+// the product render) by scanning for the black screen region's pixel bounds, then
+// expressed as percentages so it stays correct regardless of how large the device
+// image is rendered. The phone is shown at a slight perspective tilt, so this is a
+// tight axis-aligned box inset from the true (trapezoidal) screen edge — harmless
+// since the crop's own background (#141414) is near-black like the bezel around it.
 const SCREEN = {
-  left: (445 / 1600) * 100,
-  top: (128 / 900) * 100,
-  width: ((1128 - 445) / 1600) * 100,
-  height: ((435 - 128) / 900) * 100,
+  left: (522 / 1600) * 100,
+  top: (63 / 692) * 100,
+  width: ((1036 - 522) / 1600) * 100,
+  height: ((303 - 63) / 692) * 100,
 }
 
 export function DeviceMockup() {
@@ -26,8 +28,8 @@ export function DeviceMockup() {
       <div
         style={{
           position: 'relative',
-          width: 'min(90vw, 160vh)',
-          aspectRatio: '16 / 9',
+          width: 'min(90vw, 208vh)',
+          aspectRatio: '1600 / 692',
         }}
       >
         <img
@@ -45,8 +47,8 @@ export function DeviceMockup() {
         <div
           style={{
             position: 'absolute',
-            left: `calc(${SCREEN.left}%)`,
-            top: `calc(${SCREEN.top}%)`,
+            left: `${SCREEN.left}%`,
+            top: `${SCREEN.top}%`,
             width: `${SCREEN.width}%`,
             height: `${SCREEN.height}%`,
             overflow: 'hidden',
