@@ -89,10 +89,11 @@ export function DeviceMockup() {
       style={{
         width: '100%',
         height: '100%',
-        background: '#141414',
+        background: '#ffffff',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
       }}
     >
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
@@ -105,8 +106,16 @@ export function DeviceMockup() {
       <div
         style={{
           position: 'relative',
-          width: 'min(90vw, 208vh)',
+          // "cover" sizing: the smallest 1600:692 box that still fully covers the
+          // viewport on both axes (whichever dimension the viewport is relatively
+          // narrower on), so the mockup image fills the whole screen edge-to-edge
+          // with no white bars — the outer overflow:hidden clips the rest. Keeping
+          // this box at the image's exact native aspect ratio (rather than
+          // stretching to the viewport's own ratio) means SCREEN/CLIP_PATH's
+          // percentages, measured against the real image, stay correct.
+          width: 'max(100vw, calc(100vh * 1600 / 692))',
           aspectRatio: '1600 / 692',
+          flexShrink: 0,
         }}
       >
         <img
