@@ -19,9 +19,12 @@ type CarmenSceneProps = {
   // a small container (e.g. embedded in a phone-screen cutout) rather than
   // filling the viewport.
   compact?: boolean
+  // Screen colour behind the eyes — lets the embedding page match its photo's
+  // screen (DeviceMockup) so the clip edge doesn't show.
+  background?: string
 }
 
-export function CarmenScene({ compact = false }: CarmenSceneProps) {
+export function CarmenScene({ compact = false, background = '#141414' }: CarmenSceneProps) {
   const happyTargetRef = useRef(0)
   const happyTimeoutRef = useRef<number | null>(null)
   const concernedTargetRef = useRef(0)
@@ -128,10 +131,10 @@ export function CarmenScene({ compact = false }: CarmenSceneProps) {
   const tapAriaLabel = status === 'connected' ? 'Terminar conversación con Carmen' : 'Hablar con Carmen'
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#141414', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', background, position: 'relative' }}>
       <Canvas orthographic dpr={[1, 2]}>
         <ResponsiveCamera />
-        <color attach="background" args={['#141414']} />
+        <color attach="background" args={[background]} />
         <CarmenFace
           speakRef={speakRef}
           happyTargetRef={happyTargetRef}

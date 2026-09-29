@@ -1,37 +1,81 @@
+import { useEffect, useState, type CSSProperties } from 'react'
 import { CarmenScene } from './carmen/CarmenScene'
 
-// Corners of the tilted phone screen, measured directly against the 1600x692
-// source image (device-mockup.jpg) by scanning the dark screen region for its
-// x+y / x-y extremes (the standard trick for finding a rotated quad's 4
-// vertices from a silhouette). The screen is a tilted trapezoid in this
-// render — narrower at the top than the bottom — so a plain axis-aligned
-// rectangle sized to fit the wider bottom edge always pokes past the real,
-// narrower top-left/top-right corners onto the bezel, more visibly so the
-// larger the mockup renders. Each point is inset ~8px toward the shape's
-// centroid to stay clear of the bezel edge highlight.
-const IMG_W = 1600
-const IMG_H = 692
-const CORNERS = {
-  topLeft: { x: 593.1, y: 82.6 },
-  topRight: { x: 1033.8, y: 83.5 },
-  bottomRight: { x: 1041.8, y: 309.4 },
-  bottomLeft: { x: 575.3, y: 299.7 },
+type Point = { x: number; y: number }
+type Corners = { topLeft: Point; topRight: Point; bottomRight: Point; bottomLeft: Point }
+
+// The living-room scene from cuidarte-app's Home, laid out exactly as there:
+// the landscape photo centered with "cover" sizing on desktop (≥1024px, the
+// app's desktop breakpoint), the portrait crop pinned to the bottom on phones.
+//
+// Screen corners are in each photo's own pixel space (sizes are the source
+// dimensions, so percentages hold whatever the file's resolution). Measured by
+// flood-filling the near-black screen and taking the x+y / x-y extremes (the
+// standard trick for a rotated quad's 4 vertices), then inset ~7px toward the
+// centre to stay clear of the bezel. The screen is a slight trapezoid, wider at
+// the bottom. The portrait photo is a 1473x2620 crop of a taller render of the
+// same shot, 639.5px further left and 544px lower, so its corners are shifted.
+const DESKTOP_CORNERS: Corners = {
+  topLeft: { x: 978, y: 358 },
+  topRight: { x: 1795, y: 363 },
+  bottomRight: { x: 1807, y: 738 },
+  bottomLeft: { x: 959, y: 741 },
 }
 
-const boxLeft = Math.min(CORNERS.topLeft.x, CORNERS.bottomLeft.x)
-const boxRight = Math.max(CORNERS.topRight.x, CORNERS.bottomRight.x)
-const boxTop = Math.min(CORNERS.topLeft.y, CORNERS.topRight.y)
-const boxBottom = Math.max(CORNERS.bottomLeft.y, CORNERS.bottomRight.y)
-const boxWidth = boxRight - boxLeft
-const boxHeight = boxBottom - boxTop
-
-// Crop container's position/size as a percentage of the full image (its bounding box).
-const SCREEN = {
-  left: (boxLeft / IMG_W) * 100,
-  top: (boxTop / IMG_H) * 100,
-  width: (boxWidth / IMG_W) * 100,
-  height: (boxHeight / IMG_H) * 100,
+function shift(corners: Corners, dx: number, dy: number): Corners {
+  const move = (p: Point) => ({ x: p.x + dx, y: p.y + dy })
+  return {
+    topLeft: move(corners.topLeft),
+    topRight: move(corners.topRight),
+    bottomRight: move(corners.bottomRight),
+    bottomLeft: move(corners.bottomLeft),
+  }
 }
+
+type Scene = {
+  id: string
+  src: string
+  width: number
+  height: number
+  corners: Corners
+  // CSS for the photo-sized box that gets "cover"ed over the viewport
+  boxStyle: CSSProperties
+}
+
+const DESKTOP_SCENE: Scene = {
+  id: 'carmen-screen-clip-desktop',
+  src: '/scene-desktop.jpg',
+  width: 2752,
+  height: 1536,
+  corners: DESKTOP_CORNERS,
+  // centered, covering the viewport on both axes (cuidarte-app's desktop stage)
+  boxStyle: {
+    top: '50%',
+    left: '50%',
+    width: 'max(100vw, calc(100dvh * 2752 / 1536))',
+    transform: 'translate(-50%, -50%)',
+  },
+}
+
+const MOBILE_SCENE: Scene = {
+  id: 'carmen-screen-clip-mobile',
+  src: '/scene-mobile.jpg',
+  width: 1473,
+  height: 2620,
+  corners: shift(DESKTOP_CORNERS, -639.5, 544),
+  // bottom-centred, 994/917 of the screen height (cuidarte-app's mobile stage,
+  // from its 412x917 Figma frame), or the width if the screen is wider
+  boxStyle: {
+    bottom: 0,
+    left: '50%',
+    height: 'max(calc(100dvh * 994 / 917), calc(100vw * 2620 / 1473))',
+    transform: 'translateX(-50%)',
+  },
+}
+
+const DESKTOP_QUERY = '(min-width: 1024px)'
+const SCREEN_COLOR = '#040406' // the photo's own screen black, so the clip edge doesn't show
+const CORNER_RADIUS_PX = 36 // in photo pixels
 
 // Builds a closed polygon path with rounded corners: each vertex is replaced
 // by a quadratic-bezier curve between two points inset `radius` along its
@@ -39,19 +83,15 @@ const SCREEN = {
 // before `toPathSpace` converts each point to the crop box's fractional
 // coordinates, so the rounding comes out circular rather than stretched by
 // the box's non-square aspect ratio.
-function roundedPolygonPath(
-  points: { x: number; y: number }[],
-  radius: number,
-  toPathSpace: (p: { x: number; y: number }) => { x: number; y: number },
-) {
+function roundedPolygonPath(points: Point[], radius: number, toPathSpace: (p: Point) => Point) {
   const n = points.length
-  const edgePoint = (from: { x: number; y: number }, to: { x: number; y: number }, dist: number) => {
+  const edgePoint = (from: Point, to: Point, dist: number) => {
     const dx = to.x - from.x
     const dy = to.y - from.y
     const len = Math.hypot(dx, dy)
     return { x: from.x + (dx / len) * dist, y: from.y + (dy / len) * dist }
   }
-  const fmt = (p: { x: number; y: number }) => {
+  const fmt = (p: Point) => {
     const s = toPathSpace(p)
     return `${s.x} ${s.y}`
   }
@@ -70,79 +110,99 @@ function roundedPolygonPath(
   return commands.join(' ')
 }
 
-// clipPathUnits="objectBoundingBox" wants plain 0..1 fractions of the crop
-// container's own box (not the full image, and not percentages) — this is
-// what actually keeps content from spilling onto the bezel at the tapered
-// top corners, at any render size, while still rounding the corners like a
-// real phone screen.
-const CORNER_RADIUS_PX = 22 // in the same 1600x692 image-pixel space as CORNERS above
-const CLIP_PATH_ID = 'carmen-screen-clip'
-const CLIP_PATH_D = roundedPolygonPath(
-  [CORNERS.topLeft, CORNERS.topRight, CORNERS.bottomRight, CORNERS.bottomLeft],
-  CORNER_RADIUS_PX,
-  (p) => ({ x: (p.x - boxLeft) / boxWidth, y: (p.y - boxTop) / boxHeight }),
-)
+// Crop box (bounding box of the screen, as % of the photo) and the clip path in
+// clipPathUnits="objectBoundingBox" (0..1 fractions of that crop box), which is
+// what keeps content off the bezel at the tapered corners at any render size.
+function screenLayout({ width, height, corners }: Scene) {
+  const left = Math.min(corners.topLeft.x, corners.bottomLeft.x)
+  const right = Math.max(corners.topRight.x, corners.bottomRight.x)
+  const top = Math.min(corners.topLeft.y, corners.topRight.y)
+  const bottom = Math.max(corners.bottomLeft.y, corners.bottomRight.y)
+  const boxWidth = right - left
+  const boxHeight = bottom - top
+  return {
+    box: {
+      left: `${(left / width) * 100}%`,
+      top: `${(top / height) * 100}%`,
+      width: `${(boxWidth / width) * 100}%`,
+      height: `${(boxHeight / height) * 100}%`,
+    },
+    clipPath: roundedPolygonPath(
+      [corners.topLeft, corners.topRight, corners.bottomRight, corners.bottomLeft],
+      CORNER_RADIUS_PX,
+      (p) => ({ x: (p.x - left) / boxWidth, y: (p.y - top) / boxHeight }),
+    ),
+  }
+}
+
+const LAYOUTS = {
+  desktop: screenLayout(DESKTOP_SCENE),
+  mobile: screenLayout(MOBILE_SCENE),
+}
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches)
+  useEffect(() => {
+    const media = window.matchMedia(DESKTOP_QUERY)
+    const onChange = () => setIsDesktop(media.matches)
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [])
+  return isDesktop
+}
 
 export function DeviceMockup() {
+  const isDesktop = useIsDesktop()
+  const scene = isDesktop ? DESKTOP_SCENE : MOBILE_SCENE
+  const { box, clipPath } = isDesktop ? LAYOUTS.desktop : LAYOUTS.mobile
+
   return (
     <div
       style={{
+        position: 'relative',
         width: '100%',
         height: '100%',
-        background: '#ffffff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        background: SCREEN_COLOR,
         overflow: 'hidden',
       }}
     >
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
         <defs>
-          <clipPath id={CLIP_PATH_ID} clipPathUnits="objectBoundingBox">
-            <path d={CLIP_PATH_D} />
+          <clipPath id={scene.id} clipPathUnits="objectBoundingBox">
+            <path d={clipPath} />
           </clipPath>
         </defs>
       </svg>
+      {/* Photo-sized box ("cover" over the viewport), so the screen's
+          percentages, measured against the real photo, stay correct. */}
       <div
         style={{
-          position: 'relative',
-          // "cover" sizing: the smallest 1600:692 box that still fully covers the
-          // viewport on both axes (whichever dimension the viewport is relatively
-          // narrower on), so the mockup image fills the whole screen edge-to-edge
-          // with no white bars — the outer overflow:hidden clips the rest. Keeping
-          // this box at the image's exact native aspect ratio (rather than
-          // stretching to the viewport's own ratio) means SCREEN/CLIP_PATH's
-          // percentages, measured against the real image, stay correct.
-          width: 'max(100vw, calc(100vh * 1600 / 692))',
-          aspectRatio: '1600 / 692',
-          flexShrink: 0,
+          position: 'absolute',
+          aspectRatio: `${scene.width} / ${scene.height}`,
+          ...scene.boxStyle,
         }}
       >
         <img
-          src="/device-mockup.jpg"
+          src={scene.src}
           alt="Cuidarte IA device"
           style={{
             position: 'absolute',
             inset: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'contain',
             pointerEvents: 'none',
           }}
         />
         <div
           style={{
             position: 'absolute',
-            left: `${SCREEN.left}%`,
-            top: `${SCREEN.top}%`,
-            width: `${SCREEN.width}%`,
-            height: `${SCREEN.height}%`,
+            ...box,
             overflow: 'hidden',
-            clipPath: `url(#${CLIP_PATH_ID})`,
-            background: '#141414',
+            clipPath: `url(#${scene.id})`,
+            background: SCREEN_COLOR,
           }}
         >
-          <CarmenScene compact />
+          <CarmenScene compact background={SCREEN_COLOR} />
         </div>
       </div>
     </div>
