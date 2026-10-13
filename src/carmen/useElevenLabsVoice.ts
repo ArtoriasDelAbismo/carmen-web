@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { Conversation, type Conversation as ConversationInstance } from '@elevenlabs/client'
-import { BACKEND_URL, DEV_JWT, ELEVENLABS_ASSISTANT, carmenSessionBody } from '../lib/config'
+import { BACKEND_URL, DEV_JWT, carmenSessionBody } from '../lib/config'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 export type VoiceExpression = 'happy' | 'concerned' | 'sad' | 'neutral'
@@ -61,7 +61,7 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
           'Content-Type': 'application/json',
           Authorization: `Bearer ${DEV_JWT}`,
         },
-        body: carmenSessionBody(ELEVENLABS_ASSISTANT),
+        body: carmenSessionBody(),
       })
       if (!tokenRes.ok) {
         throw new Error(`Backend signed-url request failed (${tokenRes.status})`)
