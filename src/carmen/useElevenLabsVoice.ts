@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { Conversation, type Conversation as ConversationInstance } from '@elevenlabs/client'
-import { BACKEND_URL, DEV_JWT } from '../lib/config'
+import { BACKEND_URL, DEV_JWT, ELEVENLABS_ASSISTANT, carmenSessionBody } from '../lib/config'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 export type VoiceExpression = 'happy' | 'concerned' | 'sad' | 'neutral'
@@ -61,6 +61,7 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
           'Content-Type': 'application/json',
           Authorization: `Bearer ${DEV_JWT}`,
         },
+        body: carmenSessionBody(ELEVENLABS_ASSISTANT),
       })
       if (!tokenRes.ok) {
         throw new Error(`Backend signed-url request failed (${tokenRes.status})`)
@@ -69,9 +70,17 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
       const signedUrl: string | undefined = tokenData.signedUrl
       if (!signedUrl) throw new Error('Backend did not return a signed URL')
 
+      // Carmen's patient profile (filled into {{patient_profile}} in her prompt)
+      // and the token her MCP data tools send as their Authorization header.
+      // Missing when no patient was resolved — the agent's placeholders apply.
+      const dynamicVariables: Record<string, string> = {}
+      if (tokenData.patientProfile) dynamicVariables.patient_profile = tokenData.patientProfile
+      if (tokenData.carmenToken) dynamicVariables.secret__carmen_token = tokenData.carmenToken
+
       const conversation = await Conversation.startSession({
         signedUrl,
         connectionType: 'websocket',
+        dynamicVariables,
         clientTools: {
           set_expression: async ({ mood }: { mood?: string }) => {
             console.log('[useElevenLabsVoice] set_expression called with mood:', mood)
