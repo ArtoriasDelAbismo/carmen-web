@@ -97,23 +97,32 @@ export function PairingScreen({ onPaired }: { onPaired: () => void }) {
     }
   }, [pairing, onPaired, restart])
 
+  // Laid out in PairingScreen.css by the screen's own shape: QR beside the text on
+  // a landscape screen (e.g. the device mockup's), stacked on a portrait one.
   return (
     <div className="pairing">
-      <h1 className="pairing__title">Vinculá a Carmen</h1>
-      {pairing ? (
-        <>
-          <p className="pairing__text">
-            En la app Cuidarte, entrá a <strong>Vincular Carmen</strong> y escaneá este código.
-          </p>
+      <div className="pairing__layout">
+        {pairing && (
           <div className="pairing__qr">
             <QRCodeSVG value={pairing.qrPayload} size={180} marginSize={2} />
           </div>
-          <p className="pairing__text">O ingresá el código:</p>
-          <p className="pairing__code">{pairing.userCode}</p>
-        </>
-      ) : (
-        <p className="pairing__text">{error ?? 'Preparando el código…'}</p>
-      )}
+        )}
+        <div className="pairing__info">
+          <h1 className="pairing__title">Vinculá a Carmen</h1>
+          {pairing ? (
+            <>
+              <p className="pairing__text">
+                En la app Cuidarte, entrá a <strong>Carmen</strong> › <strong>Vincular a Carmen</strong> y
+                escaneá este código.
+              </p>
+              <p className="pairing__text">O ingresá el código:</p>
+              <p className="pairing__code">{pairing.userCode}</p>
+            </>
+          ) : (
+            <p className="pairing__text">{error ?? 'Preparando el código…'}</p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

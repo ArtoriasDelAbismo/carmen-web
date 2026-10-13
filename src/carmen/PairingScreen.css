@@ -1,50 +1,106 @@
+/* Sized from the screen Carmen is shown on (a container), not the browser window:
+   in the device mockup that screen is small and much wider than tall. cqh/cqw are
+   percentages of .pairing's height/width, so everything fits without scrolling. */
 .pairing {
   position: absolute;
   inset: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4%;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: #f2f2f2;
+  font-family: system-ui, sans-serif;
+}
+
+/* Portrait (or square) screen: QR on top, text below. */
+.pairing__layout {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px;
-  box-sizing: border-box;
-  color: #f2f2f2;
-  font-family: system-ui, sans-serif;
+  gap: 3cqh;
+  max-width: 100%;
+  max-height: 100%;
   text-align: center;
-  overflow: auto;
 }
 
-.pairing__title {
-  margin: 0;
-  font-size: clamp(18px, 4vmin, 28px);
-  font-weight: 600;
-}
-
-.pairing__text {
-  margin: 0;
-  max-width: 32ch;
-  font-size: clamp(12px, 2.6vmin, 16px);
-  line-height: 1.4;
-  color: #c9c9c9;
+.pairing__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5cqh;
+  min-width: 0;
 }
 
 .pairing__qr {
-  padding: 8px;
-  border-radius: 12px;
+  flex: none;
+  padding: 1.5cqmin;
+  border-radius: 2.5cqmin;
   background: #ffffff;
   line-height: 0;
 }
 
 .pairing__qr svg {
-  width: clamp(110px, 28vmin, 180px);
-  height: auto;
+  width: min(38cqh, 70cqw);
+  height: min(38cqh, 70cqw);
+}
+
+.pairing__title {
+  margin: 0;
+  font-size: clamp(11px, 5cqh, 28px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pairing__text {
+  margin: 0;
+  max-width: 34ch;
+  font-size: clamp(9px, 3.4cqh, 16px);
+  line-height: 1.35;
+  color: #c9c9c9;
 }
 
 .pairing__code {
   margin: 0;
-  font-size: clamp(22px, 6vmin, 40px);
+  font-size: clamp(13px, 7cqh, 40px);
   font-weight: 700;
   letter-spacing: 0.12em;
   color: #ff9a33;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Landscape screen (the device mockup's is about 2.2:1): QR left, text right, each
+   using the full height. */
+@container (min-aspect-ratio: 6 / 5) {
+  .pairing__layout {
+    flex-direction: row;
+    gap: 5cqw;
+    text-align: left;
+  }
+
+  .pairing__info {
+    align-items: flex-start;
+    gap: 3cqh;
+  }
+
+  .pairing__qr svg {
+    width: min(80cqh, 42cqw);
+    height: min(80cqh, 42cqw);
+  }
+
+  .pairing__title {
+    font-size: clamp(11px, 9cqh, 30px);
+  }
+
+  .pairing__text {
+    max-width: 30ch;
+    font-size: clamp(9px, 5.5cqh, 17px);
+  }
+
+  .pairing__code {
+    font-size: clamp(13px, 12cqh, 44px);
+  }
 }
