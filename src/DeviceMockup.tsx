@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
-import { CarmenScene } from './carmen/CarmenScene'
+import { CarmenDevice } from './carmen/CarmenDevice'
 import './DeviceMockup.css'
 
 type Point = { x: number; y: number }
@@ -261,7 +261,7 @@ export function DeviceMockup() {
           }}
         />
         <div style={screenStyle}>
-          <CarmenScene compact={!isFullscreen} background={SCREEN_COLOR} />
+          <CarmenDevice compact={!isFullscreen} background={SCREEN_COLOR} />
         </div>
       </div>
       <button

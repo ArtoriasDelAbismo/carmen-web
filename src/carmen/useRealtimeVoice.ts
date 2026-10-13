@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
-import { BACKEND_URL, DEV_JWT, carmenSessionBody } from '../lib/config'
+import { BACKEND_URL, carmenSessionBody } from '../lib/config'
+import { getSessionToken, handleSessionAuthFailure } from '../lib/deviceToken'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
@@ -91,15 +92,17 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
     audioEl.play().catch(() => {})
 
     try {
+      const { token, fromPairing } = getSessionToken()
       const tokenRes = await fetch(`${BACKEND_URL}/api/realtime/session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${DEV_JWT}`,
+          Authorization: `Bearer ${token}`,
         },
         body: carmenSessionBody(),
       })
       if (!tokenRes.ok) {
+        handleSessionAuthFailure(tokenRes.status, fromPairing)
         throw new Error(`Backend session request failed (${tokenRes.status})`)
       }
       const tokenData = await tokenRes.json()

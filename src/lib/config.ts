@@ -1,10 +1,9 @@
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:3000'
 
-// Token the device starts Carmen sessions with. Intended: a Carmen device token (90
-// days), which a familiar gets once from cuidarte-ia-backend's POST
-// /api/carmen/device-token using their own login — it ties the device to their
-// patient. A familiar or caregiver login JWT (24h) also works, as a stopgap.
-// Temporary: set by hand in .env.local / Netlify until there's a pairing screen.
+// Optional token set at build time, to skip pairing (demos/testing): a Carmen device
+// token from cuidarte-ia-backend's POST /api/carmen/device-token, or a familiar or
+// caregiver login JWT (24h). A token from pairing (PairingScreen) takes precedence —
+// see lib/deviceToken.ts.
 export const DEV_JWT = import.meta.env.VITE_DEV_JWT ?? ''
 
 // Which Carmen to talk to. "classic" (default) is Carmen as she's always been: no

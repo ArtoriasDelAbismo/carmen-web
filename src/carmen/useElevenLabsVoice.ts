@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { Conversation, type Conversation as ConversationInstance } from '@elevenlabs/client'
-import { BACKEND_URL, DEV_JWT, carmenSessionBody } from '../lib/config'
+import { BACKEND_URL, carmenSessionBody } from '../lib/config'
+import { getSessionToken, handleSessionAuthFailure } from '../lib/deviceToken'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 export type VoiceExpression = 'happy' | 'concerned' | 'sad' | 'neutral'
@@ -55,15 +56,17 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
       // the SDK captures the mic itself internally once the session starts.
       await navigator.mediaDevices.getUserMedia({ audio: true })
 
+      const { token, fromPairing } = getSessionToken()
       const tokenRes = await fetch(`${BACKEND_URL}/api/elevenlabs/signed-url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${DEV_JWT}`,
+          Authorization: `Bearer ${token}`,
         },
         body: carmenSessionBody(),
       })
       if (!tokenRes.ok) {
+        handleSessionAuthFailure(tokenRes.status, fromPairing)
         throw new Error(`Backend signed-url request failed (${tokenRes.status})`)
       }
       const tokenData = await tokenRes.json()
