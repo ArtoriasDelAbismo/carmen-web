@@ -1,30 +1,13 @@
 import { useCallback, useRef, useState } from 'react'
-import { BACKEND_URL, DEV_JWT } from '../lib/config'
+import { BACKEND_URL, DEV_JWT, carmenSessionBody } from '../lib/config'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
 const OPENAI_REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls'
 
-// Lets Carmen silently signal her mood alongside her spoken reply — see the
-// "Acciones disponibles" block in the backend's carmen.md prompt for when she's
-// instructed to call it.
-const SET_EXPRESSION_TOOL = {
-  type: 'function',
-  name: 'set_expression',
-  description:
-    "OBLIGATORIA en cada turno, sin excepción: cambia la expresión de tus ojos para reflejar tu estado de ánimo. Llamala SIEMPRE justo antes o en paralelo a cada respuesta hablada, incluso cuando el resultado es 'neutral' — nunca respondas sin haberla llamado primero. No es una acción real, es puramente visual y silenciosa.",
-  parameters: {
-    type: 'object',
-    properties: {
-      mood: {
-        type: 'string',
-        enum: ['happy', 'concerned', 'sad', 'neutral'],
-        description: 'El estado de ánimo a reflejar en tus ojos ahora mismo.',
-      },
-    },
-    required: ['mood'],
-  },
-}
+// Carmen's tools (set_expression, which silently signals her mood, plus her MCP
+// data tools) are defined by the backend when it mints the session — see
+// SET_EXPRESSION_TOOL in cuidarte-ia-backend's src/routes/realtime.js.
 
 export type VoiceExpression = 'happy' | 'concerned' | 'sad' | 'neutral'
 
@@ -114,6 +97,7 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
           'Content-Type': 'application/json',
           Authorization: `Bearer ${DEV_JWT}`,
         },
+        body: carmenSessionBody(),
       })
       if (!tokenRes.ok) {
         throw new Error(`Backend session request failed (${tokenRes.status})`)
@@ -161,10 +145,12 @@ export function useRealtimeVoice(options?: { onExpressionChange?: (mood: VoiceEx
             type: 'session.update',
             session: {
               turn_detection: { type: 'server_vad' },
-              tools: [SET_EXPRESSION_TOOL],
-              // Without this explicit, tools may be *defined* but not actually
-              // callable — which would explain the model narrating the tool's
-              // name in speech instead of invoking it as a real function call.
+              // No `tools` here: the backend sets them when it mints the session
+              // (set_expression + Carmen's MCP data tools, whose token only the
+              // backend knows). Sending `tools` would replace that list.
+              // tool_choice stays explicit: without it, tools may be *defined*
+              // but not actually callable — the model narrates the tool's name
+              // in speech instead of invoking it as a real function call.
               tool_choice: 'auto',
             },
           }),
