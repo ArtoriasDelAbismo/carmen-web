@@ -1,24 +1,30 @@
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:3000'
 
-// Temporary stopgap: paste a JWT from cuidarte-ia-backend's existing /api/auth login flow
-// into .env.local as VITE_DEV_JWT. Replace with a real login screen before shipping.
+// Token the device starts Carmen sessions with. Intended: a Carmen device token (90
+// days), which a familiar gets once from cuidarte-ia-backend's POST
+// /api/carmen/device-token using their own login — it ties the device to their
+// patient. A familiar or caregiver login JWT (24h) also works, as a stopgap.
+// Temporary: set by hand in .env.local / Netlify until there's a pairing screen.
 export const DEV_JWT = import.meta.env.VITE_DEV_JWT ?? ''
 
-// Temporary, until it's decided how a Carmen session is tied to a patient: which
-// patient Carmen talks to. Empty → the backend's CARMEN_DEFAULT_PATIENT_ID (or no
-// patient data at all). The caregiver behind DEV_JWT must be assigned to it.
+// Which Carmen to talk to. "classic" (default) is Carmen as she's always been: no
+// patient data, she doesn't know who she's talking to. "data" is Carmen with the
+// patient's profile and her MCP health-data tools (a separate agent/prompt on the
+// backend). Anything other than "data" fails safe to classic.
+export type CarmenMode = 'classic' | 'data'
+export const CARMEN_MODE: CarmenMode = import.meta.env.VITE_CARMEN_MODE === 'data' ? 'data' : 'classic'
+
+// Only used in "data" mode, and not needed with a device token (it already carries
+// the patient) or a familiar with a single patient. Otherwise: which patient Carmen
+// talks to — it must be linked to the familiar, or assigned to the caregiver
+// (empty → the backend's CARMEN_DEFAULT_PATIENT_ID).
 export const PATIENT_ID: string | undefined = import.meta.env.VITE_PATIENT_ID || undefined
 
-// "carmen-test" points the ElevenLabs path at the test copy of Carmen's agent;
-// empty → the production agent.
-export const ELEVENLABS_ASSISTANT: string | undefined = import.meta.env.VITE_ELEVENLABS_ASSISTANT || undefined
-
 // Body for the backend's session endpoints (/api/elevenlabs/signed-url, /api/realtime/session).
-export function carmenSessionBody(assistant?: string): string {
-  return JSON.stringify({
-    ...(assistant && { assistant }),
-    ...(PATIENT_ID && { patientId: PATIENT_ID }),
-  })
+// Classic sends nothing, exactly as before the data integration.
+export function carmenSessionBody(): string {
+  if (CARMEN_MODE !== 'data') return '{}'
+  return JSON.stringify({ assistant: 'carmen-data', ...(PATIENT_ID && { patientId: PATIENT_ID }) })
 }
 
 // Which voice provider CarmenScene connects to. Defaults to the known-working
