@@ -1,5 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { CarmenScene } from './carmen/CarmenScene'
+import './DeviceMockup.css'
 
 type Point = { x: number; y: number }
 type Corners = { topLeft: Point; topRight: Point; bottomRight: Point; bottomLeft: Point }
@@ -151,10 +152,81 @@ function useIsDesktop() {
   return isDesktop
 }
 
+// Full-screen view: just the eyes, filling the viewport. Also asks the browser
+// for real fullscreen (hides its chrome) where the Fullscreen API exists; on
+// browsers without it (iPhone Safari) the CSS view alone still fills the page.
+function useFullscreenView() {
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const enter = useCallback(() => {
+    setIsFullscreen(true)
+    document.documentElement.requestFullscreen?.().catch(() => {})
+  }, [])
+
+  const exit = useCallback(() => {
+    setIsFullscreen(false)
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    // leaving browser fullscreen some other way (Esc, browser UI) leaves the view too
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) setIsFullscreen(false)
+    }
+    // Esc for the CSS-only view, where the browser has no fullscreen to exit
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
+  return { isFullscreen, enter, exit }
+}
+
+function FullscreenIcon({ exit }: { exit: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path
+        d={
+          exit
+            ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5'
+            : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'
+        }
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 export function DeviceMockup() {
   const isDesktop = useIsDesktop()
   const scene = isDesktop ? DESKTOP_SCENE : MOBILE_SCENE
   const { box, clipPath } = isDesktop ? LAYOUTS.desktop : LAYOUTS.mobile
+  const { isFullscreen, enter, exit } = useFullscreenView()
+
+  // Same element tree in both views — only styles change — so CarmenScene
+  // never remounts and a live voice session survives toggling.
+  const photoBoxStyle: CSSProperties = isFullscreen
+    ? { position: 'absolute', inset: 0 }
+    : { position: 'absolute', aspectRatio: `${scene.width} / ${scene.height}`, ...scene.boxStyle }
+  const screenStyle: CSSProperties = isFullscreen
+    ? { position: 'absolute', inset: 0, overflow: 'hidden', background: SCREEN_COLOR }
+    : {
+        position: 'absolute',
+        ...box,
+        overflow: 'hidden',
+        clipPath: `url(#${scene.id})`,
+        background: SCREEN_COLOR,
+      }
 
   return (
     <div
@@ -175,13 +247,7 @@ export function DeviceMockup() {
       </svg>
       {/* Photo-sized box ("cover" over the viewport), so the screen's
           percentages, measured against the real photo, stay correct. */}
-      <div
-        style={{
-          position: 'absolute',
-          aspectRatio: `${scene.width} / ${scene.height}`,
-          ...scene.boxStyle,
-        }}
-      >
+      <div style={photoBoxStyle}>
         <img
           src={scene.src}
           alt="Cuidarte IA device"
@@ -191,20 +257,22 @@ export function DeviceMockup() {
             width: '100%',
             height: '100%',
             pointerEvents: 'none',
+            display: isFullscreen ? 'none' : undefined,
           }}
         />
-        <div
-          style={{
-            position: 'absolute',
-            ...box,
-            overflow: 'hidden',
-            clipPath: `url(#${scene.id})`,
-            background: SCREEN_COLOR,
-          }}
-        >
-          <CarmenScene compact background={SCREEN_COLOR} />
+        <div style={screenStyle}>
+          <CarmenScene compact={!isFullscreen} background={SCREEN_COLOR} />
         </div>
       </div>
+      <button
+        type="button"
+        onClick={isFullscreen ? exit : enter}
+        aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        className="fullscreen-toggle"
+      >
+        <FullscreenIcon exit={isFullscreen} />
+      </button>
     </div>
   )
 }
