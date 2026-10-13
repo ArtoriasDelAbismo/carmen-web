@@ -1,4 +1,4 @@
-import { DEV_JWT } from './config'
+import { BACKEND_URL, DEV_JWT } from './config'
 
 // The device token this Carmen got by pairing with a familiar (see PairingScreen),
 // kept across reloads. localStorage can be unavailable (private mode, blocked
@@ -46,5 +46,21 @@ export function handleSessionAuthFailure(status: number, fromPairing: boolean): 
   if (status === 401 && fromPairing) {
     clearDeviceToken()
     window.dispatchEvent(new Event(UNPAIRED_EVENT))
+  }
+}
+
+// While idle, asks the backend whether this paired device is still paired, so an
+// unpairing from the mobile app shows here without waiting for a conversation.
+// Network errors are ignored (the next check, or the next conversation, retries).
+export async function checkDevicePairing(): Promise<void> {
+  const token = getStoredDeviceToken()
+  if (!token) return
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/carmen/device/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    handleSessionAuthFailure(res.status, true)
+  } catch {
+    // offline or backend down — not an unpairing
   }
 }

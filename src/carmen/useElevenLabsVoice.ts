@@ -52,10 +52,9 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
     setStatus('connecting')
 
     try {
-      // Request permission explicitly first for a clean, mapped error if denied —
-      // the SDK captures the mic itself internally once the session starts.
-      await navigator.mediaDevices.getUserMedia({ audio: true })
-
+      // Session first, mic second: a session request is how an unpaired device
+      // learns it was unpaired (401 → pairing screen), which a missing or blocked
+      // mic would otherwise hide behind its own error.
       const { token, fromPairing } = getSessionToken()
       const tokenRes = await fetch(`${BACKEND_URL}/api/elevenlabs/signed-url`, {
         method: 'POST',
@@ -72,6 +71,10 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
       const tokenData = await tokenRes.json()
       const signedUrl: string | undefined = tokenData.signedUrl
       if (!signedUrl) throw new Error('Backend did not return a signed URL')
+
+      // Request mic permission explicitly for a clean, mapped error if denied —
+      // the SDK captures the mic itself internally once the session starts.
+      await navigator.mediaDevices.getUserMedia({ audio: true })
 
       // Carmen's patient profile (filled into {{patient_profile}} in her prompt)
       // and the token her MCP data tools send as their Authorization header.
