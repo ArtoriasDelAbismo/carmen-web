@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { Capacitor, SystemBars } from '@capacitor/core'
 import { CarmenDevice } from './carmen/CarmenDevice'
 import './DeviceMockup.css'
 
@@ -155,17 +156,21 @@ function useIsDesktop() {
 // Full-screen view: just the eyes, filling the viewport. Also asks the browser
 // for real fullscreen (hides its chrome) where the Fullscreen API exists; on
 // browsers without it (iPhone Safari) the CSS view alone still fills the page.
+// In the Android app the WebView has no Fullscreen API, so it hides the system
+// status and navigation bars instead.
 function useFullscreenView() {
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const enter = useCallback(() => {
     setIsFullscreen(true)
-    document.documentElement.requestFullscreen?.().catch(() => {})
+    if (Capacitor.isNativePlatform()) SystemBars.hide().catch(() => {})
+    else document.documentElement.requestFullscreen?.().catch(() => {})
   }, [])
 
   const exit = useCallback(() => {
     setIsFullscreen(false)
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    if (Capacitor.isNativePlatform()) SystemBars.show().catch(() => {})
+    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
   }, [])
 
   useEffect(() => {
