@@ -76,12 +76,16 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
       // the SDK captures the mic itself internally once the session starts.
       await navigator.mediaDevices.getUserMedia({ audio: true })
 
-      // Carmen's patient profile (filled into {{patient_profile}} in her prompt)
-      // and the token her MCP data tools send as their Authorization header.
-      // Missing when no patient was resolved — the agent's placeholders apply.
+      // Carmen's patient profile and memory (filled into {{patient_profile}} and
+      // {{patient_memory}} in her prompt), the token her MCP data tools send as
+      // their Authorization header, and the session id the backend's post-call
+      // webhook uses to save this conversation into her memory. Missing when no
+      // patient was resolved — the agent's placeholders apply.
       const dynamicVariables: Record<string, string> = {}
       if (tokenData.patientProfile) dynamicVariables.patient_profile = tokenData.patientProfile
+      if (tokenData.patientMemory) dynamicVariables.patient_memory = tokenData.patientMemory
       if (tokenData.carmenToken) dynamicVariables.secret__carmen_token = tokenData.carmenToken
+      if (tokenData.carmenSessionId) dynamicVariables.carmen_session_id = tokenData.carmenSessionId
 
       const conversation = await Conversation.startSession({
         signedUrl,
