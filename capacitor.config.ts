@@ -5,6 +5,10 @@ const config: CapacitorConfig = {
     appName: 'Carmen',
     webDir: 'dist',
     android: { allowMixedContent: false },
+    plugins: {
+      // Carmen's page is dark: light status/navigation bar icons on it.
+      SystemBars: { style: 'DARK' },
+    },
   }
 
 export default config;
