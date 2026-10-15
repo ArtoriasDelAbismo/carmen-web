@@ -86,6 +86,8 @@ export function useElevenLabsVoice(options?: { onExpressionChange?: (mood: Voice
       if (tokenData.patientMemory) dynamicVariables.patient_memory = tokenData.patientMemory
       if (tokenData.carmenToken) dynamicVariables.secret__carmen_token = tokenData.carmenToken
       if (tokenData.carmenSessionId) dynamicVariables.carmen_session_id = tokenData.carmenSessionId
+      // Her first message, e.g. "¡Buen día, Juan! ¿Cómo estás hoy?".
+      if (tokenData.carmenGreeting) dynamicVariables.carmen_greeting = tokenData.carmenGreeting
 
       const conversation = await Conversation.startSession({
         signedUrl,
